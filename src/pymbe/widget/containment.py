@@ -61,12 +61,11 @@ class ContainmentTree(ipyt.Tree, BaseWidget):
 
     @trt.observe("selected_nodes")
     def _update_selected(self, *_):
-        selected = {node._identifier for node in self.selected_nodes}
-        if selected.symmetric_difference(self.selected):
-            self.selected = tuple(selected)
+        node_ids = {node._identifier for node in self.selected_nodes}
+        self.update_selected(*node_ids)
 
     @trt.observe("selected")
-    def _update_selected_elements(self, *_):
+    def _update_selected_nodes(self, *_):
         nodes_selected = {
             node._identifier
             for node in self.selected_nodes
@@ -133,7 +132,7 @@ class ContainmentTree(ipyt.Tree, BaseWidget):
             node.nodes = self.sort_nodes(node.nodes)
 
         with self.hold_trait_notifications():
-            self.selected = []
+            self.update_selected()
             self.nodes_by_id = nodes
 
     def select_nodes(self, *nodes: str):

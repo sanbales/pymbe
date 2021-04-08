@@ -6,9 +6,8 @@ import networkx as nx
 import traitlets as trt
 import typing as ty
 
-import ipyelk
-import ipyelk.nx
-import ipyelk.contrib.shapes.connectors as conn
+import ipyelk as elk
+import ipyelk.contrib.shapes.connectors as ec
 
 from ipyelk.contrib.elements import (
     Compartment,
@@ -21,62 +20,63 @@ from ipyelk.contrib.elements import (
     elements,
 )
 from ipyelk.diagram.symbol import Def
-from ipyelk.tools import tools as elk_tools
+
+from .toolbar import Toolbar
 
 
 def an_arrow_endpoint(r=6, closed=False):
-    return conn.ConnectorDef(
+    return ec.ConnectorDef(
         children=[
-            conn.Path.from_list(
+            ec.Path.from_list(
                 [(r / 2, -r / 3), (0, 0), (r / 2, r / 3)],
                 closed=closed,
             ),
         ],
-        correction=conn.Point(-1, 0),
-        offset=conn.Point((-r / 1.75) if closed else 0, 0),
+        correction=ec.Point(-1, 0),
+        offset=ec.Point((-r / 1.75) if closed else 0, 0),
     )
 
 
 def a_feature_typing_endpoint(r=6, closed=False):
-    return conn.ConnectorDef(
+    return ec.ConnectorDef(
         children=[
-            conn.Circle(x=r * 4 / 5, y=r / 4, radius=r / 20),
-            conn.Circle(x=r * 4 / 5, y=-r / 4, radius=r / 20),
-            conn.Path.from_list(
+            ec.Circle(x=r * 4 / 5, y=r / 4, radius=r / 20),
+            ec.Circle(x=r * 4 / 5, y=-r / 4, radius=r / 20),
+            ec.Path.from_list(
                 [(r / 2, -r / 3), (0, 0), (r / 2, r / 3)],
                 closed=closed,
             ),
         ],
-        correction=conn.Point(-1, 0),
-        offset=conn.Point((-r / 1.75) if closed else 0, 0),
+        correction=ec.Point(-1, 0),
+        offset=ec.Point((-r / 1.75) if closed else 0, 0),
     )
 
 
 def a_redefinition_endpoint(r=6, closed=False):
-    return conn.ConnectorDef(
+    return ec.ConnectorDef(
         children=[
-            conn.Path.from_list([(r * 4 / 5, -r / 3), (r * 4 / 5, r / 3)]),
-            conn.Path.from_list(
+            ec.Path.from_list([(r * 4 / 5, -r / 3), (r * 4 / 5, r / 3)]),
+            ec.Path.from_list(
                 [(r / 2, -r / 3), (0, 0), (r / 2, r / 3)],
                 closed=closed,
             ),
         ],
-        correction=conn.Point(-1, 0),
-        offset=conn.Point((-r / 1.75) if closed else 0, 0),
+        correction=ec.Point(-1, 0),
+        offset=ec.Point((-r / 1.75) if closed else 0, 0),
     )
 
 
 def a_subsetting_endpoint(r=6, closed=False):
-    return conn.ConnectorDef(
+    return ec.ConnectorDef(
         children=[
-            conn.Circle(x=r / 5, y=0, radius=r / 5),
-            conn.Path.from_list(
+            ec.Circle(x=r / 5, y=0, radius=r / 5),
+            ec.Path.from_list(
                 [(r, -r / 2.5), (r / 2.5, 0), (r, r / 2.5)],
                 closed=closed,
             ),
         ],
-        correction=conn.Point(-1, 0),
-        offset=conn.Point(-r if closed else (-r / 1.9), 0),
+        correction=ec.Point(-1, 0),
+        offset=ec.Point(-r if closed else (-r / 1.9), 0),
     )
 
 
@@ -250,9 +250,9 @@ class PartContainer(Partition):
     default_edge: ty.Type[Edge] = field(default=DirectedAssociation)
 
     defs: ty.ClassVar[ty.Dict[str, Def]] = {
-        "aggregation": conn.Rhomb(r=4),
-        "composition": conn.Rhomb(r=4),
-        "containment": conn.Containment(r=4),
+        "aggregation": ec.Rhomb(r=4),
+        "composition": ec.Rhomb(r=4),
+        "containment": ec.Containment(r=4),
         "directed_association": an_arrow_endpoint(r=10, closed=False),
         "feature_typing": a_feature_typing_endpoint(r=10, closed=True),
         "generalization": an_arrow_endpoint(r=10, closed=True),
@@ -286,41 +286,19 @@ class PartContainer(Partition):
     }
 
 
-class CenterButton(elk_tools.ToolButton):
-
-    def handler(self, *_):
-        diagram = self.app.diagram
-        diagram.center(retain_zoom=True)
-
-
-class FitButton(elk_tools.ToolButton):
-
-    def handler(self, *_):
-        diagram = self.app.diagram
-        diagram.fit(padding=50)
-
-
 @ipyw.register
 class SysML2ElkDiagram(ipyw.Box):
     """A SysML v2 Diagram"""
 
     compound: Compound = trt.Instance(Compound, args=())
     container: PartContainer = trt.Instance(PartContainer, args=())
-    elk_app: ipyelk.Elk = trt.Instance(ipyelk.Elk)
-    elk_layout: ipyelk.nx.XELKTypedLayout = trt.Instance(
-        ipyelk.nx.XELKTypedLayout,
+    elk_app: elk.Elk = trt.Instance(elk.Elk)
+    elk_layout: elk.nx.XELKTypedLayout = trt.Instance(
+        elk.nx.XELKTypedLayout,
         kw=dict(selected_index=None),  # makes layout start collapsed
     )
     graph: nx.Graph = trt.Instance(nx.Graph, args=())
     id_mapper: Mapper = trt.Instance(Mapper, kw={})
-
-    fit: FitButton = trt.Instance(FitButton)
-    center: CenterButton = trt.Instance(CenterButton)
-    toolbar_buttons: list = trt.List(trait=trt.Instance(ipyw.Button))
-    toolbar_accordion: ty.Dict[str, ipyw.Widget] = trt.Dict(
-        key_trait=trt.Unicode(),
-        value_trait=trt.Instance(ipyw.Widget),
-    )
 
     parts: ty.Dict[str, Part] = trt.Dict(
         key_trait=trt.Unicode(),
@@ -346,13 +324,12 @@ class SysML2ElkDiagram(ipyw.Box):
         children = proposal.value
         if children:
             return children
-        self._update_toolbar()
         return [self.elk_app]
 
     @trt.default("elk_app")
-    def _make_app(self) -> ipyelk.Elk:
-        elk_app = ipyelk.Elk(
-            transformer=ipyelk.nx.XELK(
+    def _make_app(self) -> elk.Elk:
+        elk_app = elk.Elk(
+            transformer=elk.nx.XELK(
                 source=(self.graph, None),
                 label_key="labels",
                 layouts=self.elk_layout.value,
@@ -364,6 +341,7 @@ class SysML2ElkDiagram(ipyw.Box):
                 width="100%",
             ),
         )
+        elk_app.toolbar = Toolbar(elk_app=elk_app)
         elk_app.observe(self._update_selected, "selected")
         return elk_app
 
@@ -376,7 +354,7 @@ class SysML2ElkDiagram(ipyw.Box):
 
         def id_from_item(item):
             id_ = None
-            if isinstance(item, ipyelk.transform.Edge):
+            if isinstance(item, elk.transform.Edge):
                 id_ = item.data.get("properties", {}).get("@id")
             elif isinstance(getattr(item, "node", None), Compartment):
                 if item in hierarchy:
@@ -396,41 +374,6 @@ class SysML2ElkDiagram(ipyw.Box):
             if sysml_id is not None
         }
         return Mapper(from_elk_id)
-
-    @trt.default("center")
-    def _make_center_button(self) -> CenterButton:
-        return CenterButton(
-            app=self.elk_app,
-            description="",
-            icon="compress",
-            layout=dict(height="40px", width="40px"),
-            tooltip="Center Diagram",
-        )
-
-    @trt.default("fit")
-    def _make_fit_button(self) -> FitButton:
-        return FitButton(
-            app=self.elk_app,
-            description="",
-            icon="expand-arrows-alt",
-            layout=dict(height="40px", width="40px"),
-            tooltip="Fit Diagram",
-        )
-
-    @trt.default("toolbar_buttons")
-    def _make_toolbar_buttons(self):
-        return [self.fit, self.center]
-
-    @trt.default("toolbar_accordion")
-    def _make_toolbar_accordion(self):
-        return {
-            "Layout": self.elk_layout,
-        }
-
-    @trt.observe("toolbar_buttons", "toolbar_accordion")
-    def _update_toolbar(self, *_):
-        self.elk_app.toolbar.layout.width = "auto"
-        self.elk_app.toolbar.commands = [self._make_command_palette()]
 
     @trt.observe("elk_layout")
     def _update_observers_for_layout(self, change: trt.Bunch):
@@ -538,23 +481,6 @@ class SysML2ElkDiagram(ipyw.Box):
         }
         old_parts.update(new_parts)
         return old_parts
-
-    def _make_command_palette(self) -> ipyw.VBox:
-        titles, widgets = zip(*self.toolbar_accordion.items())
-        titles = {
-            idx: title
-            for idx, title in enumerate(titles)
-        }
-        return ipyw.VBox(
-            [
-                ipyw.HBox(self.toolbar_buttons),
-                ipyw.Accordion(
-                    _titles=titles,
-                    children=widgets,
-                    selected_index=None,
-                ),
-            ],
-        )
 
     def _update_diagram_layout_(self, *_):
         self.elk_app.transformer.layouts = self.elk_layout.value

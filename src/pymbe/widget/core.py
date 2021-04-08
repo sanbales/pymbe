@@ -12,6 +12,6 @@ class BaseWidget(Base, ipyw.DOMWidget):
     description = trt.Unicode("Unnamed Widget").tag(sync=True)
     selected: ty.Tuple[str] = trt.Tuple()
 
-    def _update_selected(self, *new_selections):
+    def update_selected(self, *new_selections):
         if set(self.selected).symmetric_difference(new_selections):
             self.selected = new_selections

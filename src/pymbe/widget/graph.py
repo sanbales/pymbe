@@ -50,45 +50,12 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, BaseWidget, ipyw.Box):
     # Revisit this when the diagram selector mapper is fixed
     selector_link: trt.link = trt.Instance(trt.link, allow_none=True)
 
-    @trt.default("update_diagram")
-    def _make_update_diagram_button(self) -> ipyw.Button:
-        button = ipyw.Button(
-            description="",
-            icon="retweet",
-            tooltip="Update diagram",
-            layout=dict(height="40px", width="40px")
-        )
-        button.on_click(self._update_diagram_graph)
-        return button
-
-    @trt.default("filter_to_path")
-    def _make_filter_to_path_button(self) -> ipyw.Button:
-        button = ipyw.Button(
-            description="",
-            icon="project-diagram",  # share-alt
-            tooltip="Filter To Path",
-            layout=dict(height="40px", width="40px")
-        )
-        button.on_click(self._update_diagram_graph)
-        return button
-
-    @trt.default("filter_by_dist")
-    def _make_filter_by_dist_button(self) -> ipyw.Button:
-        button = ipyw.Button(
-            description="",
-            icon="sitemap",  # hubspot
-            tooltip="Filter by Distance",
-            layout=dict(height="40px", width="40px")
-        )
-        button.on_click(self._update_diagram_graph)
-        return button
-
     @trt.validate("children")
     def _validate_children(self, proposal):
         children = proposal.value
         if children:
             return children
-        self._update_diagram_toolbar()
+        # self._update_diagram_toolbar()
         self._update_diagram_observers()
         return [self.diagram]
 
@@ -255,36 +222,3 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, BaseWidget, ipyw.Box):
         self.diagram.graph = new_graph
         # self.diagram.elk_app.refresh()
         self.diagram.elk_app.diagram.fit()
-
-    def _update_diagram_toolbar(self):
-        # Append elements to the elk_app toolbar
-        diagram = self.diagram
-        accordion = {**diagram.toolbar_accordion}
-
-        sub_accordion = ipyw.Accordion(
-            _titles={0: "Node Types", 1: "Edge Types"},
-            children=[
-                self.node_type_selector,
-                self.edge_type_selector,
-            ],
-            selected_index=None,
-        )
-        accordion.update({
-            # TODO: enable this after the functionality is complete
-            # "Reverse Edges": self.edge_type_reverser,
-            "Filter": ipyw.VBox([
-                self.path_directionality,
-                ipyw.Label("Shortest Path:"),
-                ipyw.HBox([self.filter_to_path, ]),
-                ipyw.Label("Distance:"),
-                ipyw.HBox([self.filter_by_dist, self.max_distance]),
-                sub_accordion,
-            ]),
-        })
-
-        buttons = [*diagram.toolbar_buttons]
-        buttons += [self.update_diagram]
-
-        with diagram.hold_trait_notifications():
-            diagram.toolbar_accordion = accordion
-            diagram.toolbar_buttons = buttons

@@ -33,5 +33,4 @@ class Base(trt.HasTraits):
 
     @trt.observe("elements_by_id")
     def _update_elements(self, *_):
-
         self.update(elements=self.elements_by_id)
