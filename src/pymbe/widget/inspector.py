@@ -13,6 +13,8 @@ class ElementInspector(ipyw.Output, BaseWidget):
 
     description = trt.Unicode("Inspector").tag(sync=True)
 
+    include_empty = trt.Bool(default_value=False)
+
     clean_data: ty.Dict[str, dict] = trt.Dict(
         key_trait=trt.Unicode(),
         value_trait=trt.Dict(),
@@ -29,6 +31,10 @@ class ElementInspector(ipyw.Output, BaseWidget):
     def _update_details(self, *_):
         self.outputs = self._make_json_output()
 
+    @trt.observe("include_empty")
+    def _update_data(self):
+        self.update(self.elements_by_id)
+
     def get_clean_data(self, *,
         element_id: str = None,
         data: dict = None,
@@ -38,6 +44,12 @@ class ElementInspector(ipyw.Output, BaseWidget):
             key: value
             for key, value in data.items()
             if key not in self.FILTER_KEYS
+            and (
+                self.include_empty
+                or value
+                or value is False
+                or value == 0.0
+            )
         }
 
     def update(self, elements: dict):

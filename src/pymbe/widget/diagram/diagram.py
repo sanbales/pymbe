@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 
 import ipywidgets as ipyw
@@ -392,6 +393,13 @@ class SysML2ElkDiagram(ipyw.Box):
         # self.elk_app.transformer.clear_registry()
         container = PartContainer()
         parts = self._add_parts()
+
+        container.labels += [
+            Label(text="""«Diagram»"""),
+            Label(text=f"""{len(self.graph)} Elements"""),
+            Label(text=f"""{len(self.graph.edges)} Relationships"""),
+            Label(text=f"""Created: {datetime.now().strftime("%Y-%m-%d")}"""),
+        ]
 
         # TODO: Look into adding the parts as children to the container without breaking the
         #       diagram interactions (e.g., filter to path or span graph)

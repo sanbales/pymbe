@@ -61,8 +61,8 @@ class ContainmentTree(ipyt.Tree, BaseWidget):
 
     @trt.observe("selected_nodes")
     def _update_selected(self, *_):
-        node_ids = {node._identifier for node in self.selected_nodes}
-        self.update_selected(*node_ids)
+        element_ids = {node._identifier for node in self.selected_nodes}
+        self.update_selected(*element_ids)
 
     @trt.observe("selected")
     def _update_selected_nodes(self, *_):

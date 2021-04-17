@@ -99,6 +99,17 @@ class SysML2Client(Base):
     @trt.default("projects")
     def _make_projects(self):
         projects = self._projects_api.get_projects()
+        # protect against project names that don't parse
+        safe_projects = []
+        for project in projects:
+            try:
+                parser.parse(
+                    " ".join(project.name.split()[-6:])
+                ).astimezone(timezone.utc)
+                safe_projects.append(project)
+            except ValueError:
+                pass
+
         return {
             project.id: dict(
                 created=parser.parse(
@@ -108,7 +119,7 @@ class SysML2Client(Base):
                 full_name=project.name,
                 name=" ".join(project.name.split()[:-6]),
             )
-            for project in projects
+            for project in safe_projects
         }
 
     @trt.observe("host_url", "host_port")

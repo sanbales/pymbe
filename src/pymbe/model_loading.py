@@ -211,7 +211,7 @@ class GraphManager:
                     self.banded_featuring_graph.add_node(owner, name=self.session.get_name_by_id(ele_id=owner))
                     self.banded_featuring_graph.add_edge(feature, owner, kind='FeatureMembership^-1')
 
-                elif self.session.get_data_by_id(redefined)['@type'] == 'AttributeUsage':
+                elif self.session.get_data_by_id(feature)['@type'] == 'AttributeUsage':
                     self.attribute_featuring_graph.add_node(feature, name=self.session.get_name_by_id(ele_id=feature))
                     self.attribute_featuring_graph.add_node(owner, name=self.session.get_name_by_id(ele_id=owner))
                     self.attribute_featuring_graph.add_edge(feature, owner, kind='FeatureMembership^-1')
