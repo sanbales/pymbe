@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dateutil import parser
 from datetime import timezone
 from functools import lru_cache
@@ -68,6 +69,8 @@ class SysML2Client(Base):
     _commits_api: sysml2.CommitApi = trt.Instance(sysml2.CommitApi)
     _elements_api: sysml2.ElementApi = trt.Instance(sysml2.ElementApi)
     _projects_api: sysml2.ProjectApi = trt.Instance(sysml2.ProjectApi)
+
+    contexts: dict = trt.Dict(kw={})
 
     selected_project: str = trt.Unicode(allow_none=True)
     selected_commit: str = trt.Unicode(allow_none=True)
@@ -148,10 +151,10 @@ class SysML2Client(Base):
     def _update_elements(self, *_, elements=None):
         elements = elements or []
         elements_by_id = {
-            element["@id"]: element
+            element["@id"]: self.import_context(element)
             for element in elements
         }
-        for element in elements:
+        for element in elements_by_id.values():
             if "label" not in element:
                 element["label"] = get_label(
                     element,
@@ -161,6 +164,8 @@ class SysML2Client(Base):
 
     @property
     def host(self):
+        if not self.host_port:
+            return self.host_url
         return f"{self.host_url}:{self.host_port}"
 
     @property
@@ -177,6 +182,9 @@ class SysML2Client(Base):
             f"elements"
         ) + (f"?page[size]={self.page_size}" if self.paginate else "")
 
+    def get_context_url(self, metatype):
+        return f"{self.host}/jsonld/{metatype}.jsonld"
+
     @lru_cache
     def _retrieve_data(self, url: str) -> dict:
         response = requests.get(url)
@@ -186,6 +194,33 @@ class SysML2Client(Base):
                 f"reason: {response.reason}"
             )
         return response.json()
+
+    def import_context(self, jsonld_item: dict) -> dict:
+        jsonld_item = deepcopy(jsonld_item)
+        metatype = jsonld_item.get("@type")
+        if not metatype:
+            return jsonld_item
+        context = jsonld_item.get("@context", {})
+        if not context:
+            context_url = self.get_context_url(metatype)
+        else:
+            context_url = context.get("@import", None)
+        if not context_url:
+            return jsonld_item
+        jsonld_item["@context"] = context
+        if context_url not in self._cached_contexts:
+            response = requests.get(context_url)
+            if not response.ok:
+                raise requests.HTTPError(response.reason)
+            data = response.json()
+            if "@context" not in data:
+                raise ValueError(
+                    "Download context does not have a "
+                    f"@context key: {list(data.keys())}"
+                )
+            self._cached_contexts[context_url] = data["@context"]
+        jsonld_item["@context"].update(self._cached_contexts[context_url])
+        return jsonld_item
 
     def _get_elements_from_server(self):
         return self._retrieve_data(self.elements_url)

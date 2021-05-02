@@ -6,7 +6,7 @@ name: pymbe
 icon:
 
 description: |
-  A pythonic Model-based Engineering framework based on SysML v2.
+  A pythonic Model-based Engineering analysis framework based on SysML v2.
 
 #
 # In the commands section, list your runnable scripts, notebooks, and other code.
@@ -93,7 +93,9 @@ env_specs:
   user:
     description: The environment for running the notebooks
     packages:
+    - openmdao >=3.0
     - ipyelk >=1.0,<2.0
+    - ipyradiant >=0.2.0,<1.0
     - ipytree >=0.2.1,<1.0
     - jupyterlab >=3.0,<4
     - matplotlib
@@ -101,6 +103,7 @@ env_specs:
     - notebook
     - numpy
     - pip
+    - pytest
     - rdflib
     - rdflib-jsonld
     - ruamel.yaml
