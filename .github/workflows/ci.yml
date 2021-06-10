@@ -111,12 +111,15 @@ jobs:
         shell: bash -l {0}
         run: |
           export INSTALL_ARTIFACT=sdist
+          anaconda-project run setup
           anaconda-project run test
 
       - name: test (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
-        run: anaconda-project run test
+        run: |
+          anaconda-project run setup
+          anaconda-project run test
 
       - name: test (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -124,7 +127,9 @@ jobs:
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
-        run: anaconda-project run test
+        run: |
+          anaconda-project run setup
+          anaconda-project run test
 
       - name: reports
         uses: actions/upload-artifact@v2
