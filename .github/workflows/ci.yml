@@ -6,6 +6,7 @@ on:
       - main
       - dev
   pull_request: null
+  workflow_dispatch: null
 
 env:
   PYTHONIOENCODING: utf-8
