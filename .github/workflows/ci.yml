@@ -106,21 +106,23 @@ jobs:
       #     name: pymbe dist ${{ github.run_number }}
       #     path: ./dist
 
-      - name: setup-pymbe
-        run: |
-          anaconda-project run setup
+      # - name: setup-pymbe
+      #   run: |
+      #     anaconda-project run setup
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
         run: |
           export INSTALL_ARTIFACT=sdist
+          anaconda-project run setup
           anaconda-project run test
 
       - name: test (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: |
+          anaconda-project run setup
           anaconda-project run test
 
       - name: test (windows)
@@ -130,6 +132,7 @@ jobs:
           ATEST_PROCESSES: 1
           WIN_CI: 1
         run: |
+          anaconda-project run setup
           anaconda-project run test
 
       - name: reports
