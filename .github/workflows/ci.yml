@@ -39,7 +39,7 @@ jobs:
       - name: provision with micromamba
         uses: mamba-org/provision-with-micromamba@main
         with:
-          environment-file: ../deploy/env_files/env-base.yml
+          environment-file: deploy/env_files/env-base.yml
           environment-name: base-pymbe
 
       - name: build
@@ -90,7 +90,7 @@ jobs:
       - name: provision-with-micromamba
         uses: mamba-org/provision-with-micromamba@main
         with:
-          environment-file: ../deploy/env_files/env-base.yml
+          environment-file: deploy/env_files/env-base.yml
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
