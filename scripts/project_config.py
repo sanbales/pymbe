@@ -7,6 +7,8 @@ import platform
 BASE_ENV = "base-pymbe"
 BASE_ENV_FILE = "env-base.yml"
 
+CI = os.environ.get("CI", 0)
+
 # platform
 PLATFORM = os.environ.get("FAKE_PLATFORM", platform.system())
 WIN = PLATFORM == "Windows"

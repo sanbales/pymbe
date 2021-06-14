@@ -25,7 +25,9 @@ DOIT_CONFIG = {
 
 
 def _activate_cmd(env):
-    if P.WIN:
+    if P.CI:
+        return f"conda activate {P.ENVS_DIR}\{env}"
+    elif P.WIN:
         return f"activate {P.ENVS_DIR}\{env}"
     else:
         return f"source activate {P.ENVS_DIR}/{env}"
