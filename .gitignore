@@ -144,3 +144,6 @@ envs/
 
 #PyCharm
 .idea
+
+# doit
+*.doit
