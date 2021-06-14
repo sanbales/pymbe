@@ -28,4 +28,3 @@ ENVS_DIR = ROOT / "envs"
 
 # lock file config
 LOCK_DIR = ROOT / "deploy" / "lock_files"
-LOCK_FILE_PREFIX = "pymbe-lock"
