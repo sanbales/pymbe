@@ -26,9 +26,9 @@ DOIT_CONFIG = {
 
 def _activate_cmd(env):
     if P.WIN:
-        return f"activate envs\{env}"
+        return f"activate {P.ENVS_DIR}\{env}"
     else:
-        return f"source activate envs/{env}"
+        return f"source activate {P.ENVS_DIR}/{env}"
 
 
 def task_build_envs():

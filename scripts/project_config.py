@@ -21,11 +21,11 @@ SCRIPTS = Path(__file__).parent
 ROOT = SCRIPTS.parent
 
 # where the envs file are kept
-ENVS_FILE_DIR = ROOT / "deploy" / "envs"
+ENVS_FILE_DIR = ROOT / "deploy" / "env_files"
 
 # where to build the envs
 ENVS_DIR = ROOT / "envs"
 
 # lock file config
-LOCK_DIR = ROOT / "deploy" / "locks"
+LOCK_DIR = ROOT / "deploy" / "lock_files"
 LOCK_FILE_PREFIX = "pymbe-lock"

@@ -1,0 +1,39 @@
+name: developer
+
+description: The environment for developing pymbe
+
+channels:
+  - https://conda.anaconda.org/conda-forge
+
+platforms:
+  - linux-64
+  - osx-64
+  - win-64
+
+dependencies:
+  - ipyelk >=1.0,<2
+  - ipytree >=0.2.1,<1
+  - jupyterlab >=3.0,<4
+  - matplotlib
+  - networkx >=2.0,<3
+  - notebook
+  - numpy
+  - openmdao >=3.0,<4
+  - pyld
+  - rdflib
+  - rdflib-jsonld
+  - ruamel.yaml
+  - tabulate
+  - wxyz_lab
+  - black
+  - coverage
+  - doit
+  - git
+  - isort
+  - pip
+  - pytest
+  - pytest-asyncio
+  - pytest-cov
+  - pytest-html
+  - pytest-xdist
+  - wheel
