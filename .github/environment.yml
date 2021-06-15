@@ -5,6 +5,7 @@ channels:
 
 dependencies:
   - black
+  - conda-lock
   - coverage
   - doit
   - git
