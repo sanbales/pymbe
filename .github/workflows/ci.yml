@@ -36,21 +36,25 @@ jobs:
       #       ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
       #     restore-keys: |
       #       ${{ runner.os }}-conda-
-      - name: provision with micromamba
-        uses: mamba-org/provision-with-micromamba@main
-        with:
-          environment-file: deploy/env_files/env-base.yml
-          environment-name: base-pymbe
+      # - name: provision with micromamba
+      #   uses: mamba-org/provision-with-micromamba@main
+      #   with:
+      #     environment-file: deploy/env_files/env-base.yml
+      #     environment-name: base-pymbe
 
-      - name: setup miniconda
+      - name: setup mambaforge
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: "latest"
+          condarc-file: .github/.condarc
+          miniforge-variant: Mambaforge
           activate-environment: base-pymbe
+          environment-file: deploy/env_files/env-base.yml
+          use-mamba: true
 
       - name: build
         shell: bash -l {0}
         run: |
+          conda list
           doit build_envs
           doit package || exit 1
 
