@@ -43,6 +43,8 @@ jobs:
         run: |
           mamba list
           doit build_envs
+          conda init bash
+          source ~/.bashrc
           doit package || exit 1
 
       - name: publish dists
@@ -106,13 +108,10 @@ jobs:
         shell: bash -l {0}
         run: |
           export INSTALL_ARTIFACT=sdist
-          doit build_envs dev_setup test
-
-      - name: test (macos)
-        if: ${{ contains(matrix.os, 'macos') }}
-        shell: bash -l {0}
-        run: |
-          doit build_envs dev_setup test
+          doit build_envs
+          conda init bash
+          source ~/.bashrc
+          doit dev_setup test
 
       - name: test (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -121,7 +120,19 @@ jobs:
           ATEST_PROCESSES: 1
           WIN_CI: 1
         run: |
-          doit build_envs dev_setup test
+          doit build_envs
+          conda init powershell
+          "if (test-path $PROFILE.CurrentUserAllHosts) { & $PROFILE.CurrentUserAllHosts}"
+          doit dev_setup test
+
+      - name: test (macos)
+        if: ${{ contains(matrix.os, 'macos') }}
+        shell: bash -l {0}
+        run: |
+          doit build_envs
+          conda init bash
+          source ~/.bashrc
+          doit dev_setup test
 
       - name: reports
         uses: actions/upload-artifact@v2
