@@ -45,6 +45,7 @@ jobs:
           doit build_envs
           conda init bash
           source ~/.bashrc
+          conda activate base-pymbe
           doit package || exit 1
 
       - name: publish dists
@@ -111,6 +112,7 @@ jobs:
           doit build_envs
           conda init bash
           source ~/.bashrc
+          conda activate base-pymbe
           doit dev_setup test
 
       - name: test (windows)
@@ -123,6 +125,7 @@ jobs:
           doit build_envs
           conda init powershell
           "if (test-path $PROFILE.CurrentUserAllHosts) { & $PROFILE.CurrentUserAllHosts}"
+          conda activate base-pymbe
           doit dev_setup test
 
       - name: test (macos)
@@ -132,6 +135,7 @@ jobs:
           doit build_envs
           conda init bash
           source ~/.bashrc
+          conda activate base-pymbe
           doit dev_setup test
 
       - name: reports
