@@ -28,7 +28,7 @@ If you don't have `anaconda` or `miniconda`, just get [Mambaforge](https://githu
 If you don't have `anaconda-project`, install [anaconda-project](https://anaconda-project.readthedocs.io):
 
 ```bash
-mamba env update --name base-pymbe --file deploy/envs/env-base.yml
+mamba env update --name base-pymbe --file deploy/env_files/env-base.yml
 activate base-pymbe
 ```
 OR

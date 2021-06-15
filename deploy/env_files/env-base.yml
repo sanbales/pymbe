@@ -1,11 +1,6 @@
 name: base-pymbe
-description: The base pymbe environment for building and running things
 channels:
   - https://conda.anaconda.org/conda-forge
-platforms:
-  - linux-64
-  - osx-64
-  - win-64
 dependencies:
   - conda
   - conda-lock
