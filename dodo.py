@@ -29,7 +29,7 @@ def _activate_cmd(env):
         if P.WIN:
             return f"activate {P.ENVS_DIR}\{env}"
         else:
-            return f". {P.ENVS_DIR}\{env}\bin\activate"
+            return f". {P.ENVS_DIR}/{env}/bin/activate"
     elif P.WIN:
         return f"activate {P.ENVS_DIR}\{env}"
     else:
