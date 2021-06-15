@@ -25,8 +25,11 @@ DOIT_CONFIG = {
 
 
 def _activate_cmd(env):
-    if P.CI:
-        return f"bash activate {P.ENVS_DIR}\{env}"
+    if P.CI
+        if P.WIN:
+            return f"activate {P.ENVS_DIR}\{env}"
+        else:
+            return f". {P.ENVS_DIR}\{env}\bin\activate"
     elif P.WIN:
         return f"activate {P.ENVS_DIR}\{env}"
     else:
