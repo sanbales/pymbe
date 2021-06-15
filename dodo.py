@@ -15,11 +15,7 @@ os.environ.update(
 
 DOIT_CONFIG = {
     "verbosity": 2,
-    "default_tasks": [
-        "build_envs",
-        "dev_setup",
-        "test",
-    ],
+    "default_tasks": ["build_envs", "dev_setup", "test",],
 }
 
 
@@ -54,7 +50,7 @@ def task_build_envs():
             name=f"build_envs-{file.stem}",
             actions=[
                 # f"conda-lock -p={P.ENVS_DIR}, --validate-platform --mamba {str(file)}"
-                f"mamba create --file {str(file)} -p={str(P.ENVS_DIR / env_name)} -q"
+                f"mamba create --file {str(file)} -p={str(P.ENVS_DIR / env_name)} -yq"
             ],
         )
 
@@ -63,6 +59,7 @@ def task_dev_setup():
     """Setup development environment"""
     return {
         "actions": [
+            f"{_activate_cmd('developer')} git submodule update --init",
             f"{_activate_cmd('developer')} pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
             f"{_activate_cmd('developer')} pip install -e . --no-dependencies",
         ]
