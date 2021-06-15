@@ -1,6 +1,7 @@
 # a set of queries to run on Labeled Property Graphs
 import networkx as nx
-import math
+import numpy as np
+
 from ..graph.lpg import SysML2LabeledPropertyGraph
 from .metamodel_navigator import *
 from ..interpretation.results import *
@@ -63,7 +64,7 @@ def roll_up_multiplicity(
                 target=part_tree_root,
             )
             # TODO: check that the path actually exists
-            corrected_mult = math.prod([
+            corrected_mult = np.prod([
                 feature_multiplicity(all_elements[node], all_elements, bound)
                 for node in part_path
             ])

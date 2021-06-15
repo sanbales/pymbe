@@ -182,7 +182,7 @@ class SysML2Client(Base):
             f"elements"
         ) + (f"?page[size]={self.page_size}" if self.paginate else "")
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=128)
     def _retrieve_data(self, url: str) -> dict:
         response = requests.get(url)
         if not response.ok:
