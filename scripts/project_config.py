@@ -1,8 +1,8 @@
 """ Important Project Config Stuff. """
 
 import os
-from pathlib import Path
 import platform
+from pathlib import Path
 
 BASE_ENV = "base-pymbe"
 BASE_ENV_FILE = "env-base.yml"

@@ -2,29 +2,29 @@ name: developer
 channels:
   - https://conda.anaconda.org/conda-forge
 dependencies:
+  - black
+  - coverage
+  - doit
+  - git
   - ipyelk >=1.0,<2
   - ipytree >=0.2.1,<1
+  - isort
   - jupyterlab >=3.0,<4
   - matplotlib
   - networkx >=2.0,<3
   - notebook
   - numpy
   - openmdao >=3.0,<4
-  - pyld
-  - rdflib
-  - rdflib-jsonld
-  - ruamel.yaml
-  - tabulate
-  - wxyz_lab
-  - black
-  - coverage
-  - doit
-  - git
-  - isort
   - pip
+  - pyld
   - pytest
   - pytest-asyncio
   - pytest-cov
   - pytest-html
   - pytest-xdist
+  - rdflib
+  - rdflib-jsonld
+  - ruamel.yaml
+  - tabulate
   - wheel
+  - wxyz_lab

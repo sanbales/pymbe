@@ -31,7 +31,7 @@ If you don't have `anaconda-project`, install [anaconda-project](https://anacond
 mamba env update --name base-pymbe --file deploy/env_files/env-base.yml
 activate base-pymbe
 ```
-OR
+OR (on Unix)
 ```
 source activate base-pymbe
 ```
@@ -39,10 +39,10 @@ source activate base-pymbe
 
 ## 5. Setup the Development Environment
 
-> This will install the non-packaged dependencies and `pymbe` in editable mode.
+> This will setup necessary environments, install the non-packaged dependencies, and `pymbe` in editable mode.
 
 ```bash
-anaconda-project run setup
+doit
 ```
 
 # ... and get going!
@@ -50,7 +50,7 @@ anaconda-project run setup
 You can then get a running instance of JupyterLab by running:
 
 ```bash
-anaconda-project run lab
+doit lab
 ```
 
 Copy the URL where JupyterLab is running into your preferred browser, and you should be good to go!

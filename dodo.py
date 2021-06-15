@@ -1,8 +1,6 @@
 """ doit tasks for PyMBE """
 
-
 import os
-
 
 from ensureconda.resolve import platform_subdir
 
@@ -16,11 +14,12 @@ os.environ.update(
 )
 
 DOIT_CONFIG = {
-    #     "backend": "sqlite3",
     "verbosity": 2,
-    #     "par_type": "thread",
-    "default_tasks": ["build_envs", "dev_setup", "test"],
-    #     "reporter": reporter.GithubActionsReporter,
+    "default_tasks": [
+        "build_envs",
+        "dev_setup",
+        "test",
+    ],
 }
 
 
@@ -61,8 +60,7 @@ def task_build_envs():
 
 
 def task_dev_setup():
-    """Setup development environment
-    """
+    """Setup development environment"""
     return {
         "actions": [
             f"{_activate_cmd('developer')} pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
@@ -71,16 +69,50 @@ def task_dev_setup():
     }
 
 
+def task_lab():
+    """Launch JupyterLab"""
+    if P.WIN:
+        return {"actions": [f"{_activate_cmd('developer')} jupyter lab"]}
+    else:
+        return {
+            "actions": [
+                f"{_activate_cmd('developer')} jupyter lab --no-browser --debug"
+            ]
+        }
+
+
+def task_lint():
+    """Apply linting to the codebase"""
+    if P.WIN:
+        return {"actions": [f"{_activate_cmd('developer')} isort . && black ."]}
+    else:
+        return {"actions": [f"{_activate_cmd('developer')} isort . && black src/"]}
+
+
 def task_package():
-    """Make a source distribution
-    """
+    """Make a source distribution"""
     return {"actions": [f"{_activate_cmd('developer')} python setup.py sdist"]}
 
 
 def task_test():
-    """Run unit tests.
-    """
+    """Run unit tests."""
     return {"actions": [f"{_activate_cmd('developer')} py.test tests/"]}
+
+
+def task_tutorial():
+    """Launch JupyterLab and open Tutorial Notebook"""
+    if P.WIN:
+        return {
+            "actions": [
+                f"{_activate_cmd('developer')} jupyter lab notebooks/Tutorial.ipynb"
+            ]
+        }
+    else:
+        return {
+            "actions": [
+                f"{_activate_cmd('developer')} jupyter lab --no-browser --debug notebooks/Tutorial.ipynb"
+            ]
+        }
 
 
 def task_update():
