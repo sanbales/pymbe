@@ -26,14 +26,11 @@ DOIT_CONFIG = {
 
 def _activate_cmd(env):
     if P.CI:
-        if P.WIN:
-            return f"conda activate {P.ENVS_DIR}\{env}"
-        else:
-            return f"conda activate {P.ENVS_DIR}/{env}"
+        return f""
     elif P.WIN:
-        return f"activate {P.ENVS_DIR}\{env}"
+        return f"activate {P.ENVS_DIR}\{env} &&"
     else:
-        return f"source activate {P.ENVS_DIR}/{env}"
+        return f"source activate {P.ENVS_DIR}/{env} &&"
 
 
 def task_build_envs():
@@ -68,8 +65,8 @@ def task_dev_setup():
     """
     return {
         "actions": [
-            f"{_activate_cmd('developer')} && pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
-            f"{_activate_cmd('developer')} && pip install -e . --no-dependencies",
+            f"{_activate_cmd('developer')} pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
+            f"{_activate_cmd('developer')} pip install -e . --no-dependencies",
         ]
     }
 
@@ -77,13 +74,13 @@ def task_dev_setup():
 def task_package():
     """Make a source distribution
     """
-    return {"actions": [f"{_activate_cmd('developer')} && python setup.py sdist"]}
+    return {"actions": [f"{_activate_cmd('developer')} python setup.py sdist"]}
 
 
 def task_test():
     """Run unit tests.
     """
-    return {"actions": [f"{_activate_cmd('developer')} && py.test tests/"]}
+    return {"actions": [f"{_activate_cmd('developer')} py.test tests/"]}
 
 
 def task_update():

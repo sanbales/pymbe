@@ -34,18 +34,13 @@ jobs:
           mamba-version: "*"
           channels: conda-forge
           miniforge-variant: Mambaforge
-          activate-environment: base-pymbe
-          environment-file: deploy/env_files/env-base.yml
+          activate-environment: developer
+          environment-file: deploy/env_files/developer.yml
           use-mamba: true
 
       - name: build
         shell: bash -l {0}
         run: |
-          mamba list
-          doit build_envs
-          conda init bash
-          source ~/.bashrc
-          conda activate base-pymbe
           doit package || exit 1
 
       - name: publish dists
@@ -88,20 +83,14 @@ jobs:
       - name: git checkout
         uses: actions/checkout@v2
 
-      - name: provision-with-micromamba
-        uses: mamba-org/provision-with-micromamba@main
-        with:
-          environment-file: deploy/env_files/env-base.yml
-          environment-name: base-pymbe
-
       - name: setup mambaforge
         uses: conda-incubator/setup-miniconda@v2
         with:
           mamba-version: "*"
           channels: conda-forge
           miniforge-variant: Mambaforge
-          activate-environment: base-pymbe
-          environment-file: deploy/env_files/env-base.yml
+          activate-environment: developer
+          environment-file: deploy/env_files/developer.yml
           use-mamba: true
 
       - name: test (linux)
@@ -109,10 +98,6 @@ jobs:
         shell: bash -l {0}
         run: |
           export INSTALL_ARTIFACT=sdist
-          doit build_envs
-          conda init bash
-          source ~/.bashrc
-          conda activate base-pymbe
           doit dev_setup test
 
       - name: test (windows)
@@ -122,20 +107,12 @@ jobs:
           ATEST_PROCESSES: 1
           WIN_CI: 1
         run: |
-          doit build_envs
-          conda init powershell
-          "if (test-path $PROFILE.CurrentUserAllHosts) { & $PROFILE.CurrentUserAllHosts}"
-          conda activate base-pymbe
           doit dev_setup test
 
       - name: test (macos)
         if: ${{ contains(matrix.os, 'macos') }}
         shell: bash -l {0}
         run: |
-          doit build_envs
-          conda init bash
-          source ~/.bashrc
-          conda activate base-pymbe
           doit dev_setup test
 
       - name: reports
