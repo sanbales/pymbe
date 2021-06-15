@@ -4,11 +4,30 @@ channels:
   - https://conda.anaconda.org/conda-forge
 
 dependencies:
-  - anaconda-project =0.8.4
-  - conda =4.9
-  - doit ==0.32
-  - mamba =0.7
+  - black
+  - coverage
+  - doit
+  - git
+  - ipyelk >=1.0,<2
+  - ipytree >=0.2.1,<1
+  - isort
+  - jupyterlab >=3.0,<4
+  - matplotlib
+  - networkx >=2.0,<3
+  - notebook
+  - numpy
+  - openmdao >=3.0,<4
   - pip
+  - pyld
+  - pytest
+  - pytest-asyncio
+  - pytest-cov
+  - pytest-html
+  - pytest-xdist
   - python >=3.7,<3.8
-  - twine
+  - rdflib
+  - rdflib-jsonld
+  - ruamel.yaml
+  - tabulate
   - wheel
+  - wxyz_lab
