@@ -146,4 +146,4 @@ envs/
 .idea
 
 # doit
-*.doit
+*.doit*
