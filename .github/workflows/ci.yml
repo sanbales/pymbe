@@ -43,7 +43,7 @@ jobs:
           environment-name: base-pymbe
 
       - name: setup miniconda
-      - uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: "latest"
           activate-environment: base-pymbe
@@ -101,11 +101,11 @@ jobs:
           environment-name: base-pymbe
 
       - name: setup miniconda
-      - uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: "latest"
           activate-environment: base-pymbe
-          
+
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
