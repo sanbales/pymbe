@@ -25,7 +25,7 @@ DOIT_CONFIG = {
 
 
 def _activate_cmd(env):
-    if P.CI
+    if P.CI:
         if P.WIN:
             return f"activate {P.ENVS_DIR}\{env}"
         else:
