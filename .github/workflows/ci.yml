@@ -28,24 +28,11 @@ jobs:
       - name: git checkout
         uses: actions/checkout@v2
 
-      # - name: cache (conda)
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: ~/conda_pkgs_dir
-      #     key:
-      #       ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-conda-
-      # - name: provision with micromamba
-      #   uses: mamba-org/provision-with-micromamba@main
-      #   with:
-      #     environment-file: deploy/env_files/env-base.yml
-      #     environment-name: base-pymbe
-
       - name: setup mambaforge
         uses: conda-incubator/setup-miniconda@v2
         with:
-          # condarc-file: .github/.condarc
+          mamba-version: "*"
+          channels: conda-forge
           miniforge-variant: Mambaforge
           activate-environment: base-pymbe
           environment-file: deploy/env_files/env-base.yml
@@ -54,7 +41,7 @@ jobs:
       - name: build
         shell: bash -l {0}
         run: |
-          conda list
+          mamba list
           doit build_envs
           doit package || exit 1
 
@@ -104,11 +91,13 @@ jobs:
           environment-file: deploy/env_files/env-base.yml
           environment-name: base-pymbe
 
-      - name: setup miniconda
+      - name: setup mambaforge
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: "latest"
+          miniforge-variant: Mambaforge
           activate-environment: base-pymbe
+          environment-file: deploy/env_files/env-base.yml
+          use-mamba: true
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
