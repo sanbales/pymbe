@@ -25,7 +25,7 @@ dependencies:
   - pytest-cov
   - pytest-html
   - pytest-xdist
-  - python <=3.7
+  - python >=3.6
   - rdflib
   - rdflib-jsonld
   - ruamel.yaml
