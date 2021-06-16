@@ -92,7 +92,9 @@ jobs:
 
       - name: git checkout
         uses: actions/checkout@v2
-
+        with:
+          submodules: recursive
+          
       - name: setup python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:

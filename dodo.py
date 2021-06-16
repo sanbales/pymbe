@@ -57,13 +57,18 @@ def task_build_envs():
 
 def task_dev_setup():
     """Setup development environment"""
-    return {
-        "actions": [
+    actions = [
+        f"{_activate_cmd('developer')} pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
+        f"{_activate_cmd('developer')} pip install -e . --no-dependencies",
+    ]
+
+    # submodule checkout included as part of CI yaml and this will fail
+    if not P.CI:
+        actions = [
             f"{_activate_cmd('developer')} git submodule update --init --force",
-            f"{_activate_cmd('developer')} pip install git+https://github.com/Systems-Modeling/SysML-v2-API-Python-Client.git --no-dependencies",
-            f"{_activate_cmd('developer')} pip install -e . --no-dependencies",
-        ]
-    }
+        ] + actions
+
+    return {"actions": actions}
 
 
 def task_lab():
