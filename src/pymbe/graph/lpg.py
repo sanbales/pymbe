@@ -348,7 +348,7 @@ class SysML2LabeledPropertyGraph(Base):
             reversed_edge_types=tuple(sorted(reversed_edge_types)),
         ).copy()
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def _adapt(self,
         excluded_node_types: ty.Union[list, set, tuple] = None,
         excluded_edge_types: ty.Union[list, set, tuple] = None,

@@ -1,0 +1,14 @@
+name: base-pymbe
+channels:
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  - colorama >=0.4.4
+  - conda
+  - conda-lock
+  - doit
+  - mamba >=0.7
+  - pip
+  - python >=3.6
+  - pyyaml
+  - twine
+  - wheel

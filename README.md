@@ -23,31 +23,26 @@ conda install mamba
 
 If you don't have `anaconda` or `miniconda`, just get [Mambaforge](https://github.com/conda-forge/miniforge/releases/tag/4.9.2-5).
 
-## 3. Get `anaconda-project`
+## 2. Build `base-pymbe`
 
 If you don't have `anaconda-project`, install [anaconda-project](https://anaconda-project.readthedocs.io):
 
 ```bash
-mamba install anaconda-project=0.8.4
+mamba env update --name base-pymbe --file deploy/env_files/env-base.yml
+activate base-pymbe
+```
+OR (on Unix)
+```
+source activate base-pymbe
 ```
 
-## 4. Configure `mamba` as default
-
-> This will make `anaconda-project` use `mamba` instead of `conda`, making it faster to solve and install the environments.
-
-> You will have to do this when you start your shell unless you set these environment variables permanently.
-
-```bash
-CONDA_EXE=mamba        # linux
-set CONDA_EXE=mamba    # windows
-```
 
 ## 5. Setup the Development Environment
 
-> This will install the non-packaged dependencies and `pymbe` in editable mode.
+> This will setup necessary environments, install the non-packaged dependencies, and `pymbe` in editable mode.
 
 ```bash
-anaconda-project run setup
+doit
 ```
 
 # ... and get going!
@@ -55,7 +50,7 @@ anaconda-project run setup
 You can then get a running instance of JupyterLab by running:
 
 ```bash
-anaconda-project run lab
+doit lab
 ```
 
 Copy the URL where JupyterLab is running into your preferred browser, and you should be good to go!

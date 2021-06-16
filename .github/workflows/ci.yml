@@ -6,6 +6,7 @@ on:
       - main
       - dev
   pull_request: null
+  workflow_dispatch: null
 
 env:
   PYTHONIOENCODING: utf-8
@@ -14,6 +15,7 @@ env:
   CONDA_EXE: mamba
   SKIP_CONDA_PREFLIGHT: 1
   CACHE_EPOCH: 0
+  CI: 1
 
 jobs:
   build:
@@ -22,29 +24,33 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu]
+        python-version: [3.7, 3.8]
     steps:
       - name: git checkout
         uses: actions/checkout@v2
-
-      - name: cache (conda)
-        uses: actions/cache@v1
         with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-conda-
+          submodules: recursive
 
-      - name: provision with micromamba
-        uses: mamba-org/provision-with-micromamba@main
+      - name: setup python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: setup mambaforge
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          channels: conda-forge
+          miniforge-variant: Mambaforge
+          activate-environment: pymbe-ci
           environment-file: .github/environment.yml
-          environment-name: pymbe-ci
+          python-version: ${{ matrix.python-version }}
+          use-mamba: true
 
       - name: build
         shell: bash -l {0}
         run: |
-          anaconda-project run package || exit 1
+          doit package || exit 1
 
       - name: publish dists
         uses: actions/upload-artifact@v2
@@ -62,6 +68,7 @@ jobs:
           - ubuntu
           - macos
           - windows
+        python-version: [3.7, 3.8]
         include:
           - os: ubuntu
             miniforge: Linux-x86_64.sh
@@ -85,37 +92,31 @@ jobs:
 
       - name: git checkout
         uses: actions/checkout@v2
-
-      - name: cache (conda)
-        uses: actions/cache@v1
         with:
-          path: ~/conda_pkgs_dir
-          key: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-${{ hashFiles('.github/environment.yml', 'anaconda-project-lock.yml') }}
-          restore-keys: |
-            ${{ env.CACHE_EPOCH }}-${{ runner.os }}-conda-
-
-      - name: provision-with-micromamba
-        uses: mamba-org/provision-with-micromamba@main
+          submodules: recursive
+          
+      - name: setup python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: setup mambaforge
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          channels: conda-forge
+          miniforge-variant: Mambaforge
+          activate-environment: pymbe-ci
           environment-file: .github/environment.yml
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: pymbe dist ${{ github.run_number }}
-          path: ./dist
+          python-version: ${{ matrix.python-version }}
+          use-mamba: true
 
       - name: test (linux)
         if: ${{ contains(matrix.os, 'ubuntu') }}
         shell: bash -l {0}
         run: |
           export INSTALL_ARTIFACT=sdist
-          anaconda-project run test || exit 1
-
-      - name: test (macos)
-        if: ${{ contains(matrix.os, 'macos') }}
-        shell: bash -l {0}
-        run: anaconda-project run test || exit 1
+          doit dev_setup test
 
       - name: test (windows)
         if: ${{ contains(matrix.os, 'windows') }}
@@ -123,7 +124,14 @@ jobs:
         env:
           ATEST_PROCESSES: 1
           WIN_CI: 1
-        run: anaconda-project run test || exit 1
+        run: |
+          doit dev_setup test
+
+      - name: test (macos)
+        if: ${{ contains(matrix.os, 'macos') }}
+        shell: bash -l {0}
+        run: |
+          doit dev_setup test
 
       - name: reports
         uses: actions/upload-artifact@v2
