@@ -9,12 +9,12 @@ from ipyelk.elements import layout_options as opt
 
 from ...graph import SysML2LabeledPropertyGraph
 from ..core import BaseWidget
-from .parts import Part
-from .part_diagram import PartDiagram
+from .parts import Part, PartDiagram
 from .relationships import METATYPE_TO_RELATIONSHIP_TYPES, DirectedAssociation
 from .tools import Toolbar
 from .utils import Mapper
 
+opt.OptionsWidget
 
 @ipyw.register
 class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
@@ -79,24 +79,16 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
     def _update_projection_selector(self, *_):
         self.projection_selector.options = tuple(self.sysml_projections)
 
-    @trt.observe("nodes_by_type")
-    def _update_node_type_selector_options(self, *_):
+    @trt.observe("nodes_by_type", "edges_by_type")
+    def _update_options_for_toolbar_selectors(self, change: trt.Bunch):
+        if not change or not change.new:
+            return
+        selector, *_ = change.name.split("_")
         self.toolbar.update_options(
-            selector="nodes",
+            selector=selector,
             options={
-                f"{node_type} [{len(nodes)}]": nodes
-                for node_type, nodes in sorted(self.nodes_by_type.items())
-            },
-        )
-
-    @trt.observe("edges_by_type")
-    def _update_edge_type_selector_options(self, *_):
-        self.toolbar.update_options(
-            selector="edges",
-            options={
-                f"{edge_type} [{len(edges)}]": edges
-                for edge_type, edges in sorted(self.edges_by_type.items())
-                if edge_type in self.edge_types
+                f"{item_type} [{len(items)}]": items
+                for item_type, items in sorted(change.new.items())
             },
         )
 
@@ -135,7 +127,8 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
             map(
                 list,
                 self.toolbar.node_type_selector.value
-            ), []
+            ),
+            []
         )))
 
     @property
@@ -152,7 +145,8 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
             map(
                 list,
                 self.toolbar.edge_type_selector.value
-            ), []
+            ),
+            []
         )))
 
     @property
@@ -231,49 +225,45 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
                     f"{self.selected}."
                 )
 
-        self.diagram_graph = new_graph
+        self._update_diagram(new_graph=new_graph)
         # self.diagram.elk_app.refresh()
         # self.diagram.elk_app.diagram.fit()
         return failed
 
     @trt.observe("diagram")
     def _update_diagram(self, *_):
-        model = self.model
-        self.source = self.loader.load(model)
-        self.style = model.style
-        self.view.symbols = model.symbols
+        diagram = self.diagram
+        self.source = self.loader.load(diagram)
+        self.style = diagram.style
+        self.view.symbols = diagram.symbols
 
-    @trt.observe("diagram_graph")
-    def _update_diagram(self, change: trt.Bunch):
-        if change.old not in (None, trt.Undefined):
-            old = change.old
-            del old
-        graph = change.new
-
-        model = PartDiagram()
+    def _update_diagram(self, new_graph: nx.Graph):
+        diagram = PartDiagram()
         parts = self.parts
         new_parts = {
             id_: Part.from_data(node_data)
-            for id_, node_data in graph.nodes.items()
+            for id_, node_data in new_graph.nodes.items()
             if node_data
-               and id_ not in parts
+            and id_ not in parts
         }
         parts.update(new_parts)
 
-        for (source, target, metatype), edge_data in graph.edges.items():
+        for (source, target, metatype), edge_data in new_graph.edges.items():
             if source not in parts:
                 self.log.warn(
                     f"Could not map source: {source} in "
                     f"'{metatype}' with {target}"
                 )
                 continue
+
             if target not in parts:
                 self.log.warn(
                     f"Could not map target: {target} in "
                     f"'{metatype}' with {source}"
                 )
                 continue
-            new_relationship = model.add_relationship(
+
+            _ = diagram.add_relationship(
                 source=parts[source],
                 target=parts[target],
                 cls=METATYPE_TO_RELATIONSHIP_TYPES.get(
@@ -282,7 +272,8 @@ class SysML2LPGWidget(SysML2LabeledPropertyGraph, ipyelk.Diagram, BaseWidget):
                 ),
                 data=edge_data,
             )
-        self.model = model
+
+        self.diagram = diagram
 
     @trt.observe("selected")
     def _update_diagram_selections(self, *_):

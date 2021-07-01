@@ -92,7 +92,7 @@ class SysML2LabeledPropertyGraph(Base):
             return []
         metatype = edge_mapper["metatype"]
         sources = [data["@id"]]
-        targets =data[attribute]
+        targets = data[attribute]
         if isinstance(targets, (list, tuple, set)):
             targets = [
                 t["@id"] for t in targets
@@ -158,7 +158,7 @@ class SysML2LabeledPropertyGraph(Base):
             graph.add_edges_from(self.graph)
 
         old_graph = self.graph
-        del old_graph
+        del globals()[old_graph]
 
         graph.add_nodes_from(
             {
@@ -226,7 +226,7 @@ class SysML2LabeledPropertyGraph(Base):
                 types = set(getattr(self, types_key)).difference(included_types)
                 instructions[f"excluded_{types_key}"] = tuple(sorted(types))
 
-        function_attributes = self.adapt.__annotations__
+        function_attributes = getattr(self.adapt, "__annotations__", [])
         return {
             key: value
             for key, value in instructions.items()
@@ -234,7 +234,7 @@ class SysML2LabeledPropertyGraph(Base):
         }
 
     def get_implied_feedforward_edges(self) -> list:
-        eeg = self.get_projection("Expression Evaluation Graph")
+        eeg: nx.DiGraph = self.get_projection("Expression Evaluation Graph")
 
         edge_dict = {
             edge["@id"]: edge
@@ -270,6 +270,7 @@ class SysML2LabeledPropertyGraph(Base):
                 # between the result parameter of the ownedResultExpression and the result
                 # parameter of the Function or Expression.
                 rem_flag = False
+                rem_owned_ele, rem_owning_type = {}, {}
                 for om_id in owned_memberships:
                     relationship = edge_dict[om_id["@id"]]
                     relationship_metatype = relationship["@type"]
@@ -291,7 +292,7 @@ class SysML2LabeledPropertyGraph(Base):
                             expr_results.append(expr_result)
 
                 # FIXME: streamline / simplify this
-                if rem_flag:
+                if rem_flag and rem_owned_ele and rem_owning_type:
                     rem_cheat_expr = rem_owned_ele["@id"]
                     rem_cheat_result = rem_owned_ele["result"]["@id"]
                     rem_cheat_para = rem_owning_type["result"]["@id"]
@@ -324,12 +325,13 @@ class SysML2LabeledPropertyGraph(Base):
             for *_, data in self.get_implied_edges()
         }
 
-    def get_projection(self, projection: str) -> nx.Graph:
+    def get_projection(self, projection: str) -> ty.Union[nx.Graph, nx.DiGraph]:
         return self.adapt(**self.get_projection_instructions(
             projection=projection,
         ))
 
-    def adapt(self,
+    def adapt(
+        self,
         excluded_node_types: ty.Union[list, set, tuple] = None,
         excluded_edge_types: ty.Union[list, set, tuple] = None,
         reversed_edge_types: ty.Union[list, set, tuple] = None,
@@ -349,7 +351,8 @@ class SysML2LabeledPropertyGraph(Base):
         ).copy()
 
     @lru_cache
-    def _adapt(self,
+    def _adapt(
+        self,
         excluded_node_types: ty.Union[list, set, tuple] = None,
         excluded_edge_types: ty.Union[list, set, tuple] = None,
         reversed_edge_types: ty.Union[list, set, tuple] = None,
@@ -424,7 +427,6 @@ class SysML2LabeledPropertyGraph(Base):
             return graph.__class__(graph.subgraph(nodes))
 
         except (nx.NetworkXError, nx.NetworkXException) as exc:
-            self.log.warning(exc)
             if try_reverse:
                 return self.get_path_graph(
                     graph=graph,
