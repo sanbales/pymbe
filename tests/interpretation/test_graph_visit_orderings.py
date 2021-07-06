@@ -1,7 +1,6 @@
 from pymbe.interpretation.interp_playbooks import (
     build_expression_sequence_templates,
     build_sequence_templates,
-    random_generator_phase_0_interpreting_edges,
 )
 
 
@@ -97,8 +96,6 @@ def test_expression_sequence_templates(kerbal_lpg):
     full_mass_dot = "ad0bff53-eebe-4446-a8df-4db0b7187707"
     fre_1 = "2665fb1b-1f12-4f13-a977-0f060915773e"
     fre_1_result = "6cfb516b-6045-454e-a521-83b747acef7e"
-
-    random_generator_phase_0_interpreting_edges(kerbal_lpg)
 
     expr_sequences = build_expression_sequence_templates(lpg=kerbal_lpg)
     top_plus_paths = 0

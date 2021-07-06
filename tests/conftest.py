@@ -190,6 +190,7 @@ def kerbal_random_stage_4_complete(kerbal_lpg, kerbal_random_stage_3_complete) -
     expr_sequences = build_expression_sequence_templates(lpg=kerbal_lpg)
 
     random_generator_playbook_phase_4(
+        kerbal_lpg.nodes,
         expr_sequences,
         kerbal_lpg,
         kerbal_random_stage_3_complete,
