@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import timezone
 from dateutil import parser
@@ -115,13 +116,14 @@ class SysML2Client(trt.HasTraits):
 
     @trt.default("projects")
     def _make_projects(self):
-        projects = self._projects_api.get_projects()
+        projects = json.loads(self._projects_api.get_projects(_preload_content=False).data)
 
         def process_project_safely(project) -> dict:
             # protect against projects that can't be parsed
+            full_name = project["name"]
             try:
                 created = parser.parse(
-                    " ".join(project.name.split()[-6:]),
+                    " ".join(full_name.split()[-6:]),
                     tzinfos=TIMEZONES,
                 ).astimezone(timezone.utc)
             except ValueError:
@@ -129,12 +131,12 @@ class SysML2Client(trt.HasTraits):
                 return dict()
             return dict(
                 created=created,
-                full_name=project.name,
-                name=" ".join(project.name.split()[:-6]),
+                full_name=full_name,
+                name=" ".join(full_name.split()[:-6]),
             )
 
         results = {
-            project.id: process_project_safely(project)
+            project["id"]: process_project_safely(project)
             for project in projects
         }
 
@@ -234,6 +236,8 @@ class SysML2Client(trt.HasTraits):
 
     def _get_project_commits(self):
         # TODO: add more info about the commit when API provides it
+        if not self.selected_project:
+            return []
         return [
             commit.id
             for commit in self._commits_api.get_commits_by_project(
