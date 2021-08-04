@@ -6,11 +6,11 @@ from ..model import Element, Model
 
 # What visual representation to use for instances based on their M1 Metatype
 REPRESENTATION_BY_METATYPE = dict(
-    ConnectionUsage="Line",
-    # PartDefinition="Rectangle",
-    PartUsage="Rounded Rectangle",
-    # PortDefinition="Rectangle",
-    PortUsage="Port",
+    ConnectionUsage="line",
+    # PartDefinition="rectangle",
+    PartUsage="rounded-rectangle",
+    # PortDefinition="rectangle",
+    PortUsage="port",
 )
 
 

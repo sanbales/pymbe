@@ -3,7 +3,6 @@ import typing as ty
 import ipywidgets as ipyw
 import traitlets as trt
 from ipyelk import Diagram, ElementLoader
-from ipyelk.elements import Label, Node, Port
 from ipyelk.elements import layout_options as opt
 
 from ...graph import SysML2LabeledPropertyGraph
@@ -12,12 +11,6 @@ from ...interpretation.interpretation import repack_instance_dictionaries
 from ..core import BaseWidget
 from .part_diagram import PartDiagram
 from .tools import BUTTON_ICONS
-
-NODE_LAYOUT_OPTIONS = {
-    "org.eclipse.elk.portLabels.placement": "INSIDE",
-    "org.eclipse.elk.nodeSize.constraints": "NODE_LABELS PORTS PORT_LABELS MINIMUM_SIZE",
-    "org.eclipse.elk.nodeLabels.placement": "H_CENTER V_CENTER",
-}
 
 __all__ = ("M0Viewer",)
 
@@ -44,7 +37,7 @@ class M0Viewer(ipyw.Box, BaseWidget):
         help="The LPG of the project currently loaded.",
     )
     interpretation: ty.Dict = trt.Dict()
-    port_size: int = trt.Integer(15)
+    port_size: int = trt.Integer(10)
 
     @trt.validate("children")
     def _validate_children(self, proposal: trt.Bunch):
@@ -141,7 +134,7 @@ class M0Viewer(ipyw.Box, BaseWidget):
         #                 )
         #             parent_node = elk_node
 
-        nodes = [entry for entry in repacked if is_draw_kind(entry, "Rectangle")]
+        nodes = [entry for entry in repacked if is_draw_kind(entry, "rectangle")]
         for interpreted_node in nodes:
             for sequence in interpreted_node.value:
                 # parent_instance, *remaining_instances = sequence.instances
@@ -152,37 +145,26 @@ class M0Viewer(ipyw.Box, BaseWidget):
                     elk_node = elk_nodes.get(instance)
                     if elk_node is None:
                         elk_nodes[instance] = elk_node = parent_node.add_child(
-                            Node(
-                                labels=[
-                                    # TODO: Find out how to represent type
-                                    # Label(text=f"`{interpreted_node.base.label}`"),
-                                    Label(text=instance.name),
-                                ],
-                                layoutOptions=NODE_LAYOUT_OPTIONS,
-                            ),
+                            PartDiagram.make_node(instance),
                         )
                     parent_node = elk_node
 
-        ports = [entry.value for entry in repacked if is_draw_kind(entry, "Port")]
+        ports = [entry.value for entry in repacked if is_draw_kind(entry, "port")]
         elk_ports = {}
         for port_set in ports:
             for sequence in port_set:
                 *_, node, port = sequence.instances
                 elk_ports[port] = elk_nodes[node].add_port(
-                    port=Port(
-                        layoutOptions={
-                            "org.eclipse.elk.port.borderOffset": f"-{self.port_size}",
-                        },
-                        labels=[Label(text=port.name.split("#")[-1])],
-                        width=self.port_size,
-                        height=self.port_size,
-                    ),
+                    port=PartDiagram.make_port(port, self.port_size),
                 )
 
-        lines = [entry.value for entry in repacked if is_draw_kind(entry, "Line")]
+        lines = [entry.value for entry in repacked if is_draw_kind(entry, "line")]
         for line in lines:
             for connection in line:
-                src, tgt = connection.get_line_ends()
+                connection_ends = connection.get_line_ends()
+                if not connection_ends:
+                    continue
+                src, tgt = connection_ends
                 part_diagram.add_edge(
                     source=elk_ports[src.instances[-1]],
                     target=elk_ports[tgt.instances[-1]],

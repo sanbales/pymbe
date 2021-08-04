@@ -1,9 +1,33 @@
-from ipyelk.elements import Compartment, ElementMetadata, Record
+from ipyelk.elements import (
+    Compartment,
+    ElementMetadata,
+    Node,
+    NodeProperties,
+    Port,
+    PortProperties,
+    Record,
+)
 from pydantic import Field
 
 
 class PartMetadata(ElementMetadata):
     sysml_id: str = Field(default="NO_ID")
+
+
+class NodeUsage(Node):
+    """An instance of a part usage."""
+
+    properties: NodeProperties = Field(
+        default_factory=lambda *_: NodeProperties(cssClasses="usage")
+    )
+
+
+class PortUsage(Port):
+    """An instance of a port usage."""
+
+    properties: PortProperties = Field(
+        default_factory=lambda *_: PortProperties(cssClasses="usage")
+    )
 
 
 class Part(Record):
