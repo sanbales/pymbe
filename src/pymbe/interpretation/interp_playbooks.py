@@ -291,7 +291,7 @@ def random_generator_playbook_phase_3(
             if metatype in TYPES_FOR_FEATURING:
                 types = safe_feature_data(feature, "type")
                 if isinstance(types, Element):
-                    typ = types._id
+                    typ = (types._id or [])
                 else:
                     if not types:
                         raise NotImplementedError(
@@ -576,17 +576,15 @@ def validate_working_data(lpg: SysML2LabeledPropertyGraph) -> bool:
 
     :return: A Boolean indicating that the user model is ready to be interpreted
     """
+    # FIXME: Convert to the element-model style for better accuracy
+
     # check that all the elements of the graph are in fact proper model elements
-    all_non_relations = lpg.nodes
-    for id_, non_relation in all_non_relations.items():
+    for id_, non_relation in lpg.model.all_non_relationships.items():
         try:
             non_relation["@type"]
         except KeyError:
-            print(f"No type found in {non_relation}, id = '{id_}'")
+            print(f"No metatype found in {non_relation}, id = '{id_}', name = {(lpg.model.elements[id_].name or '')}")
             return False
         except TypeError:
             print(f"Expecting dict of model element data, got = {non_relation}")
-        if "@id" not in non_relation:
-            print(f"No '@id' found in {non_relation}, id = '{id_}'")
-            return False
     return True

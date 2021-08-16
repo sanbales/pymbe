@@ -54,8 +54,12 @@ def get_label_for_expression(
         "InvocationExpression",
         "OperatorExpression",
         "PathStepExpression",
+        "NullExpression"
     ):
         raise NotImplementedError(f"Cannot create M1 signature for: {metatype}")
+
+    if metatype == "NullExpression":
+        return "{}"
 
     if metatype == "FeatureReferenceExpression":
         try:
@@ -112,6 +116,8 @@ def get_label_for_expression(
 
         prefix = ".".join(path_step_names)
     inputs = f""" ({", ".join(input_names)})""" if input_names else ""
+    if result is None:
+        return f"""{prefix}{inputs} => {"Unnamed Result"}"""
     return f"""{prefix}{inputs} => {result.name or "Unnamed Result"}"""
 
 

@@ -136,6 +136,8 @@ Part Typing:
   description: >
     Generate library settings for a graph that just looks at part
     definition and usage typing
+  implied_edge_types:
+    - ImpliedFeatureTyping
   included_node_types:
     - ActionDefinition
     - ActionUsage
@@ -153,6 +155,7 @@ Part Typing:
     - PortUsage
   included_edge_types:
     - FeatureTyping
+    - ImpliedFeatureTyping
 
 Part Typing and Redefinition:
   description: |

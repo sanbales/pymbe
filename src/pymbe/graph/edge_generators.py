@@ -50,9 +50,35 @@ def get_implied_parameter_feedforward(lpg: SysML2LabeledPropertyGraph) -> List[M
     implied_parameter_feedforward_edges = (
         (edge.value.result._id, edge.get_owner()._id, "ImpliedParameterFeedforward")
         for edge in get_elements_from_lpg_edges(lpg)
-        if edge._metatype == "FeatureValue"
+        if edge._metatype == "FeatureValue" and edge.value.result is not None
     )
     return make_lpg_edges(*implied_parameter_feedforward_edges)
+
+
+def get_implied_feature_typings(lpg: SysML2LabeledPropertyGraph) -> List[MultiEdge]:
+    """
+    Set up to fill in for cases where typing, definition are in attributes rather than
+    with explicit FeatureTyping edges from the API
+    :param lpg:
+    :return:
+    """
+    # TODO: Remove this when the API and spec are fixed to have types as multiple
+
+    def get_types(element: Element) -> List[Element]:
+        types = getattr(element, "type", None) or []
+        if isinstance(types, Element):
+            types = [types]
+
+        return types
+
+    all_ft = [(src, tgt) for src, tgt, _ in lpg.edges_by_type["FeatureTyping"]]
+    implied_typing_edges = (
+        (element._id, type_._id, "ImpliedFeatureTyping")
+        for element in lpg.model.elements.values()
+        for type_ in get_types(element)
+        if (element._id, type_._id) not in all_ft
+    )
+    return make_lpg_edges(*implied_typing_edges)
 
 
 def get_implied_feedforward_edges(lpg: SysML2LabeledPropertyGraph) -> List[MultiEdge]:
@@ -139,4 +165,5 @@ def get_implied_feedforward_edges(lpg: SysML2LabeledPropertyGraph) -> List[Multi
 IMPLIED_GENERATORS = dict(
     ImpliedFeedforwardEdges=get_implied_feedforward_edges,
     ImpliedParameterFeedforward=get_implied_parameter_feedforward,
+    ImpliedFeatureTyping=get_implied_feature_typings,
 )

@@ -29,7 +29,7 @@ def safe_feature_data(feature: Element, key: str) -> Element:
     values = feature._data[key]
     num_types = len(values)
     if num_types == 0:
-        return None
+        return []
     if num_types == 1:
         return feature._model.elements[values[0]["@id"]]
 
