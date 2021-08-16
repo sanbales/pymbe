@@ -1,14 +1,12 @@
+import subprocess
 from pathlib import Path
 from typing import List, Tuple, Union
 from warnings import warn
-
-import subprocess
 
 import requests
 
 from . import _paths as P
 from . import _variables as V
-
 
 HAS_COLOR = True
 
@@ -88,9 +86,7 @@ def _run(args: Union[List[str], Tuple[str]], *, wait: bool = True, **kwargs) -> 
     else:
         str_args = list(map(str, args))
         print(
-            f"{blue}\n===\n{' '.join(str_args)}{location}\n===\n{endc}".replace(
-                str(P.ROOT), "."
-            ),
+            f"{blue}\n===\n{' '.join(str_args)}{location}\n===\n{endc}".replace(str(P.ROOT), "."),
             flush=True,
         )
     proc = subprocess.Popen(str_args, **kwargs)

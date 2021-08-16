@@ -1,10 +1,8 @@
+import sys
 from pathlib import Path
 from shutil import which
 
-import sys
-
-
-ROOT = (Path(__file__) / "..").resolve()
+ROOT = (Path(__file__) / "../..").resolve()
 
 DOWNLOADS = ROOT / "downloads"
 
@@ -18,5 +16,5 @@ POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "mysecretpassword"
 POSTGRES_DB = "sysml2"
 
-PSQL_DATA = ROOT / "data"
-PSQL_LOGS = PSQL_DATA / "logs"
+API = ROOT / "api"
+PSQL_LOGS = API / "logs"

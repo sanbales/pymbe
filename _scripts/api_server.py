@@ -1,13 +1,12 @@
+import socket
 from argparse import ArgumentParser
 from contextlib import closing
 from time import sleep
 
-import socket
-
 from . import _paths as P
 from . import _variables as V
-from .utils import _run, COLOR as C
-
+from .utils import COLOR as C
+from .utils import _run
 
 API_ZIP_FILE = P.DOWNLOADS / "api_server.zip"
 API_DOWNLOAD_URL = f"{V.SYSML_API_GITHUB}/archive/refs/tags/{V.SYSML2_API_RELEASE}.zip"
@@ -51,22 +50,17 @@ class PostgreSQLProcess:
 
     def start_proc(self):
         if self.is_running():
-            print(
-                f"{C.WARNING} Mongo is already running "
-                f"on {self.host}:{self.port} {C.ENDC}"
-            )
+            print(f"{C.WARNING} Mongo is already running " f"on {self.host}:{self.port} {C.ENDC}")
             return
 
         self.__proc = _run(
             [
                 PSQL,
-                "--dbpath",
-                MONGO_DATA.resolve(),
                 "--no-password",
                 f"--port={self.port}",
                 f"--log-file={P.PSQL_LOGS.resolve()}",
             ],
-            cwd=MONGO_DATA,
+            cwd=P.API,
             wait=False,
         )
         retries = 0

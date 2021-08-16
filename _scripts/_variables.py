@@ -1,5 +1,5 @@
-from os import environ as ENV_VARS
 import platform
+from os import environ as ENV_VARS
 
 OK = 0
 ERR = 1

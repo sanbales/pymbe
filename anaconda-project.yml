@@ -26,20 +26,6 @@ variables:
   SYSML2_API_RELEASE: 2021-06
   SYSML2_RELEASE: 2021-06.1
 
-# downloads:
-#   API_SERVER:
-#     filename: downloads/api_server.zip
-#     url: https://github.com/Systems-Modeling/SysML-v2-API-Services/archive/2021-06.zip?ts=20210804Z020300+00
-#     unzip: True
-#   SBT_INSTALLER:
-#     filename: downloads/sbt.zip
-#     url: https://github.com/sbt/sbt/releases/download/v1.2.8/sbt-1.2.8.zip?ts=20210804Z020300+00
-#     unzip: True
-#   SYSML_V2_RELEASE:
-#     filename: downloads/sysml2_release.zip
-#     url: https://github.com/Systems-Modeling/SysML-v2-Release/archive/2021-06.1.zip
-#     unzip: True
-
 commands:
   lab:
     description: launch lab
@@ -54,14 +40,9 @@ commands:
       pip install -e . --no-dependencies
     windows: |
       git submodule update --init & pip install -e . --no-dependencies
-  install_sysml_kernel:developer:
+  sysml:kernel:install:
     description: setup SysML v2 kernel for JupyterLab in the `developer` environment
     env_spec: developer
-    unix: python -m _scripts.kernel --install
-    windows: python -m _scripts.kernel --install
-  install_sysml_kernel:user:
-    description: setup SysML v2 kernel for JupyterLab in the `user` environment
-    env_spec: user
     unix: python -m _scripts.kernel --install
     windows: python -m _scripts.kernel --install
   lint:
@@ -69,11 +50,11 @@ commands:
     env_spec: developer
     unix: |
       isort .
-      black src/ tests/ -l {{MAX_LINE_LENGTH}}
-      flake8 src/
+      black src/ tests/ _scripts/ -l {{MAX_LINE_LENGTH}}
+      flake8 src/ _scripts/
       pylint src/ --rcfile=.pylintrc
     windows: |
-      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ & pylint src/ --rcfile=.pylintrc
+      isort . & black src/ tests/ _scripts/ -l {{MAX_LINE_LENGTH}} & flake8 src/ _scripts/ & pylint src/ --rcfile=.pylintrc
   package:
     description: make a source distribution
     env_spec: developer
@@ -121,47 +102,34 @@ commands:
     env_spec: developer
     unix: twine upload -r testpypi dist/*
     windows: twine upload -r testpypi dist/* --verbose
-  # server:run:
-  #   description: run the API server
-  #   env_spec: api_server
-  #   unix: 
-  #   windows: 
-  # server:setup:
-  #   description: setup the API server
-  #   env_spec: api_server
-  #   unix: |
-  #     ls {{ SBT_INSTALLER }}
-  #     # sbt clean
-  #     # sbt run
-  #   windows: 
-  #     dir {{ SBT_INSTALLER }}
+  sysml:api:setup:
+    description: setup the SysML v2 Pilot Implementation API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --install
+    windows: python -m _scripts.api_server --install
+  sysml:api:start:
+    description: setup the API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --start
+    windows: python -m _scripts.api_server --start
+  sysml:api:stop:
+    description: setup the API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --stop
+    windows: python -m _scripts.api_server --stop
   vscode:
     env_spec: developer
     unix: code .
     windows: code .
 
 env_specs:
-  user:
-    description: The environment for running the notebooks
+  api_server:
+    description: The environment for the SysML v2 Pilot API Server
     inherit_from:
-    - sysml_kernel
+    - _java
     packages:
-    - importnb
-    - ipyelk >=2.0.0a0,<3
-    - ipytree >=0.2.1,<1
-    - jupyterlab >=3.0,<4
-    - matplotlib
-    - networkx >=2.0,<3
-    - notebook
-    - numpy
-    - openmdao >=3.0,<4
-    - pyld
-    - rdflib
-    - rdflib-jsonld
-    - ruamel.yaml
-    - tabulate
-    - wxyz_html
-    - wxyz_lab
+    - postgresql
+    - requests
   developer:
     description: The environment for developing pymbe
     inherit_from:
@@ -182,14 +150,37 @@ env_specs:
     - testbook
     - twine >=3.0,<3.4
     - wheel
-  sysml_kernel:
+  user:
+    description: The environment for running the notebooks
+    inherit_from:
+    - _sysml_kernel
+    packages:
+    - importnb
+    - ipyelk >=2.0.0a0,<3
+    - ipytree >=0.2.1,<1
+    - jupyterlab >=3.0,<4
+    - matplotlib
+    - networkx >=2.0,<3
+    - notebook
+    - numpy
+    - openmdao >=3.0,<4
+    - pyld
+    - rdflib
+    - rdflib-jsonld
+    - ruamel.yaml
+    - tabulate
+    - wxyz_html
+    - wxyz_lab
+  # partial environments used for aggregating
+  _java:
+    description: The environment for the SysML v2 Pilot API Server
+    packages:
+    - openjdk >=11,<12
+  _sysml_kernel:
     description: packages required by the SysML v2 Kernel
+    inherit_from:
+    - _java
     packages:
     - euporie
     - graphviz =2
     - nodejs =14
-  api_server:
-    description: The environment for the SysML v2 Pilot API Server
-    packages:
-    - openjdk >=11,<12
-    - postgresql
