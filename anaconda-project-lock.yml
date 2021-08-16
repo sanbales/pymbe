@@ -1083,17 +1083,6 @@ env_specs:
       - zeromq=4.3.4=h0e60522_0
       - zlib=1.2.11=h62dcd97_1010
       - zstd=1.5.0=h6255e5f_0
-      pip:
-      - autoflake==1.4
-      - click==7.1.2
-      - h11==0.12.0
-      - httpcore==0.13.6
-      - httpx==0.18.2
-      - openapi-python-client==0.10.1
-      - pyyaml==5.4.1
-      - shellingham==1.4.0
-      - sysml-v2-api-client==2021.post5
-      - typer==0.3.2
   api_server:
     locked: true
     env_spec_hash: 499b5691d73e2c754f5682a5de82320f9eb9d0a0

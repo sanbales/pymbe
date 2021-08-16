@@ -3,6 +3,7 @@ import math
 from typing import List
 
 import networkx as nx
+
 from pymbe.interpretation.set_builders import MAX_MULTIPLICITY
 
 from ..graph.lpg import SysML2LabeledPropertyGraph
@@ -63,7 +64,10 @@ def roll_up_multiplicity(
                 # TODO: check that the path actually exists
                 corrected_mult = math.prod(
                     [
-                        min(feature_multiplicity(model.elements[element_id], bound), MAX_MULTIPLICITY)
+                        min(
+                            feature_multiplicity(model.elements[element_id], bound),
+                            MAX_MULTIPLICITY,
+                        )
                         for element_id in part_path
                     ]
                 )

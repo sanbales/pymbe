@@ -200,10 +200,9 @@ class SysML2Client(trt.HasTraits):
                 if key == "timestamp":
                     data[key] = self._parse_timestamp(value)
             return data
+
         commits = sorted(self._retrieve_data(self.commits_url), key=lambda x: x["timestamp"])
-        return {
-            commit["@id"]: clean_fields(commit) for commit in commits
-        }
+        return {commit["@id"]: clean_fields(commit) for commit in commits}
 
     def _download_elements(self):
         elements = self._retrieve_data(self.elements_url)

@@ -71,8 +71,7 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
         toolbar: Toolbar = self.elk_diagram.toolbar
 
         toolbar.package_selector.options = {
-            pkg.name: pkg
-            for pkg in self.lpg.model.packages
+            pkg.name: pkg for pkg in sorted(self.lpg.model.packages)
         }
 
         toolbar.update_dropdown_options(

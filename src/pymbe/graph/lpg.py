@@ -185,11 +185,18 @@ class SysML2LabeledPropertyGraph(trt.HasTraits):  # pylint: disable=too-many-ins
             new_edges += edge_generator(lpg=self)
         return new_edges
 
-    def get_projection(self, projection: str) -> nx.Graph:
+    def get_projection(
+        self,
+        projection: str,
+        packages: ty.Optional[ty.Union[ty.List[Element], ty.Tuple[Element]]] = None,
+    ) -> nx.Graph:
+        if isinstance(packages, Element):
+            packages = [packages]
         return self.adapt(
             **self.get_projection_instructions(
                 projection=projection,
-            )
+            ),
+            included_packages=packages or [],
         )
 
     def adapt(

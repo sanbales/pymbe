@@ -54,7 +54,7 @@ def get_label_for_expression(
         "InvocationExpression",
         "OperatorExpression",
         "PathStepExpression",
-        "NullExpression"
+        "NullExpression",
     ):
         raise NotImplementedError(f"Cannot create M1 signature for: {metatype}")
 

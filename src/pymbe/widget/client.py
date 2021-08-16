@@ -153,7 +153,7 @@ class SysML2ClientWidget(SysML2Client, ipyw.GridspecLayout):
 
     def _get_commit_selector_options(self):
         return {
-            f"""{data["timestamp"].strftime("%b %d, %Y (%H:%M:%S)")} ({data["@id"]})""": id_
+            f"""{data["timestamp"].strftime("%a %b %d %H:%M:%S %Y")} <{data["@id"]}>""": id_
             for id_, data in self._get_project_commits().items()
         }
 

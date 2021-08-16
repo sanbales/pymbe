@@ -92,7 +92,9 @@ def generate_parameter_signature_map(model: Model, execution_order: list):
             try:
                 naming_map.update({pair[1]: naming_map[pair[0]]})
             except KeyError:
-                #raise KeyError(f"{pair[0]} <<{model.elements[pair[1]]._metatype}>> not found in naming map!")
+                # raise KeyError(
+                #   f"{pair[0]} <<{model.elements[pair[1]]._metatype}>> not found in naming map!"
+                # )
                 continue
         elif pair[2] == "Output":
             left_side = ""

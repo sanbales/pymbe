@@ -1,8 +1,8 @@
-from functools import lru_cache
 import json
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple, Union
 from uuid import uuid4
@@ -126,7 +126,9 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
     @property
     def packages(self) -> Tuple["Element"]:
-        return tuple(element for element in self.elements.values() if element._metatype == "Package")
+        return tuple(
+            element for element in self.elements.values() if element._metatype == "Package"
+        )
 
     def save_to_file(self, filepath: Union[Path, str], indent: int = 2) -> bool:
         if isinstance(filepath, str):
@@ -196,7 +198,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass(repr=False)
-class Element:
+class Element:  # pylint: disable=too-many-instance-attributes
     """A SysML v2 Element"""
 
     _data: dict
@@ -211,14 +213,27 @@ class Element:
     _is_relationship: bool = False
     _package: "Element" = None
 
+    # TODO: Add comparison to allow sorting of elements (e.g., by name and then by id)
+
     def __post_init__(self):
-        self._id = self._data["@id"]
-        self._metatype = self._data["@type"]
-        self._is_abstract = bool(self._data.get("isAbstract"))
-        self._is_relationship = "relatedElement" in self._data
-        for key, items in self._data.items():
+        if not self._data:
+            self._is_proxy = True
+        else:
+            self.resolve()
+
+    def resolve(self):
+        if not self._data:
+            raise NotImplementedError("Need to add functionality to get data for the element")
+        data = self._data
+        self._id = data["@id"]
+        self._metatype = data["@type"]
+
+        self._is_abstract = bool(data.get("isAbstract"))
+        self._is_relationship = "relatedElement" in data
+        for key, items in data.items():
             if key.startswith("owned") and isinstance(items, list):
-                self._data[key] = ListOfNamedItems(items)
+                data[key] = ListOfNamedItems(items)
+        self._is_proxy = False
 
     def __call__(self, *args, **kwargs):
         element = kwargs.pop("element", None)
@@ -271,8 +286,22 @@ class Element:
     def __hash__(self):
         return hash(self._data["@id"])
 
+    def __lt__(self, other):
+        if isinstance(other, str):
+            if other in self._model.elements:
+                other = self._model.elements[other]
+        if not isinstance(other, Element):
+            raise ValueError(f"Cannot compare an element to {type(other)}")
+        if self.get("name", None) and other.get("name", None):
+            return self.name < other.name
+        return self._id < other._id
+
     def __repr__(self):
         return self._model._naming.get_name(element=self)
+
+    @property
+    def is_proxy(self):
+        return not self._data
 
     @property
     def label(self) -> str:
@@ -288,7 +317,7 @@ class Element:
 
     @property
     def owning_package(self) -> "Element":
-        """ A lazy property to remember what package elements belongs to. """
+        """A lazy property to remember what package elements belongs to."""
         if self._package is None:
             owner = self.get_owner()
             while owner and owner._metatype != "Package":
