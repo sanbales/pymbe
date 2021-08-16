@@ -1,19 +1,51 @@
 name: pymbe
 
-icon:
+icon: docs/_images/icon.png
 
 description: |
   A pythonic Model-based Engineering analysis framework based on SysML v2.
 
+channels:
+- conda-forge
+- conda-forge/label/ipyelk_alpha  # TODO: Remove this when ipyelk=2 is released
+- nodefaults
+
+platforms:
+- linux-64
+- osx-64
+- win-64
+
 variables:
+  CONDA_EXE: mamba
   MAX_LINE_LENGTH: 99
+  POSTGRES_DB: sysml2-postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: pUtY0uR$eCr3tP@$sW0rDh3R3  # <-- IMPORTANT: This is not secure, don't use your real password
+  REMOTE_API_SERVER_URL: http://sysml2-sst.intercax.com  # or use http://sysml2.intercax.com
+  SBT_VERSION: 1.2.8
+  SYSML2_API_RELEASE: 2021-06
+  SYSML2_RELEASE: 2021-06.1
+
+# downloads:
+#   API_SERVER:
+#     filename: downloads/api_server.zip
+#     url: https://github.com/Systems-Modeling/SysML-v2-API-Services/archive/2021-06.zip?ts=20210804Z020300+00
+#     unzip: True
+#   SBT_INSTALLER:
+#     filename: downloads/sbt.zip
+#     url: https://github.com/sbt/sbt/releases/download/v1.2.8/sbt-1.2.8.zip?ts=20210804Z020300+00
+#     unzip: True
+#   SYSML_V2_RELEASE:
+#     filename: downloads/sysml2_release.zip
+#     url: https://github.com/Systems-Modeling/SysML-v2-Release/archive/2021-06.1.zip
+#     unzip: True
 
 commands:
   lab:
     description: launch lab
     env_spec: developer
-    unix: &lab jupyter lab --no-browser --debug
-    windows: *lab
+    unix: jupyter lab --no-browser --debug
+    windows: jupyter lab --no-browser --debug
   setup:
     description: setup development environment
     env_spec: developer
@@ -22,6 +54,16 @@ commands:
       pip install -e . --no-dependencies
     windows: |
       git submodule update --init & pip install -e . --no-dependencies
+  install_sysml_kernel:developer:
+    description: setup SysML v2 kernel for JupyterLab in the `developer` environment
+    env_spec: developer
+    unix: python -m _scripts.kernel --install
+    windows: python -m _scripts.kernel --install
+  install_sysml_kernel:user:
+    description: setup SysML v2 kernel for JupyterLab in the `user` environment
+    env_spec: user
+    unix: python -m _scripts.kernel --install
+    windows: python -m _scripts.kernel --install
   lint:
     description: lint the code
     env_spec: developer
@@ -47,6 +89,9 @@ commands:
     env_spec: developer
     unix: python -m tests.fixtures.update
     windows: python -m tests.fixtures.update
+  notebooks/Tutorial.ipynb:
+    env_spec: user
+    notebook: notebooks/Tutorial.ipynb
   push:fixtures:
     description: push the fixture data to the remote repo
     env_spec: developer
@@ -76,27 +121,30 @@ commands:
     env_spec: developer
     unix: twine upload -r testpypi dist/*
     windows: twine upload -r testpypi dist/* --verbose
-  notebooks/Tutorial.ipynb:
-    env_spec: user
-    notebook: notebooks/Tutorial.ipynb
+  # server:run:
+  #   description: run the API server
+  #   env_spec: api_server
+  #   unix: 
+  #   windows: 
+  # server:setup:
+  #   description: setup the API server
+  #   env_spec: api_server
+  #   unix: |
+  #     ls {{ SBT_INSTALLER }}
+  #     # sbt clean
+  #     # sbt run
+  #   windows: 
+  #     dir {{ SBT_INSTALLER }}
   vscode:
     env_spec: developer
     unix: code .
     windows: code .
 
-channels:
-- conda-forge
-- conda-forge/label/ipyelk_alpha  # TODO: Remove this when ipyelk=2 is released
-- nodefaults
-
-platforms:
-- linux-64
-- osx-64
-- win-64
-
 env_specs:
   user:
     description: The environment for running the notebooks
+    inherit_from:
+    - sysml_kernel
     packages:
     - importnb
     - ipyelk >=2.0.0a0,<3
@@ -134,3 +182,14 @@ env_specs:
     - testbook
     - twine >=3.0,<3.4
     - wheel
+  sysml_kernel:
+    description: packages required by the SysML v2 Kernel
+    packages:
+    - euporie
+    - graphviz =2
+    - nodejs =14
+  api_server:
+    description: The environment for the SysML v2 Pilot API Server
+    packages:
+    - openjdk >=11,<12
+    - postgresql

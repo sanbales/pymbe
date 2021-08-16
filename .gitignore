@@ -151,3 +151,6 @@ envs/
 
 # Windows BAT files (helpers)
 *.bat
+
+# API Downloads and Files
+downloads/
