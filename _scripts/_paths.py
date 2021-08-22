@@ -16,5 +16,9 @@ POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "mysecretpassword"
 POSTGRES_DB = "sysml2"
 
+PSQL_DATA = ROOT / "db"
+PSQL_LOGS = PSQL_DATA / "logs"
+PSQL_PWFILE = ROOT / "_pwfile"
+
 API = ROOT / "api"
-PSQL_LOGS = API / "logs"
+SBT_BIN = API / "sbt/bin"

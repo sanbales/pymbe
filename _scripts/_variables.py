@@ -22,3 +22,7 @@ REMOTE_API_SERVER_URL = ENV_VARS.get("REMOTE_API_SERVER_URL", "http://sysml2.int
 SBT_GITHUB = "https://github.com/sbt/sbt"
 SYSML_RELEASE_GITHUB = "https://github.com/Systems-Modeling/SysML-v2-Release"
 SYSML_API_GITHUB = "https://github.com/Systems-Modeling/SysML-v2-API-Services"
+
+PSQL_DBNAME = ENV_VARS.get("PSQL_DBNAME", "sysml2")
+PSQL_USERNAME = ENV_VARS.get("PSQL_USERNAME", "postgres")
+PSQL_PASSWORD = ENV_VARS.get("PSQL_PASSWORD", "pUtY0uR$eCr3tP@$sW0rDh3R3")

@@ -2,7 +2,6 @@ import json
 import sys
 import traceback
 from argparse import ArgumentParser
-from warnings import warn
 from zipfile import ZipFile
 
 from . import _paths as P
@@ -72,7 +71,7 @@ def install(
     """Install SysML v2 Kernel for JupyterLab."""
     exceptions = []
     if not P.DOT_LOCATION:
-        warn(f"Need to install graphviz in '{P.ENV_ROOT.name}' environment!")
+        print(f"{C.FAIL} Need to install graphviz in '{P.ENV_ROOT.name}' environment! {C.ENDC}")
         return 1
 
     if force_download or not SYSML2_KERNEL_INSTALLER.exists():
@@ -123,9 +122,11 @@ def install(
         exceptions += ["Failed to install the JupyterLab SysML extension"]
 
     if exceptions:
-        print(f"{C.WARNING} Error installing SysML 2 kernel! {C.ENDC}")
+        print(f"{C.FAIL} Error installing SysML 2 kernel! {C.ENDC}")
         for msg in exceptions:
-            print(f"{C.WARNING} {msg} {C.ENDC}")
+            print(f"{C.FAIL} {msg} {C.ENDC}")
+    else:
+        print(f"{C.OKBLUE} Installed the SysML v2 ({V.SYSML2_RELEASE}) JupyterLab Kernel {C.ENDC}")
 
     return 1 if exceptions else 0
 

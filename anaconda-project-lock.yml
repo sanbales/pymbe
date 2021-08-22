@@ -1095,7 +1095,7 @@ env_specs:
       - zstd=1.5.0=h6255e5f_0
   api_server:
     locked: true
-    env_spec_hash: 613d6968d9af3a28f756a9764aacecc072cfce83
+    env_spec_hash: 26230e6b7fb6f33965f635bb27775eb2a150b92b
     platforms:
     - linux-64
     - osx-64
@@ -1103,6 +1103,7 @@ env_specs:
     packages:
       all:
       - charset-normalizer=2.0.0=pyhd8ed1ab_0
+      - colorama=0.4.4=pyh9f0ad1d_0
       - pip=21.2.4=pyhd8ed1ab_0
       - pycparser=2.20=pyh9f0ad1d_2
       - pyopenssl=20.0.1=pyhd8ed1ab_0

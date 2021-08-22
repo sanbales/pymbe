@@ -1,7 +1,6 @@
 import subprocess
 from pathlib import Path
 from typing import List, Tuple, Union
-from warnings import warn
 
 import requests
 
@@ -53,7 +52,7 @@ def download_file(url: str, filename: Union[Path, str] = None, overwrite: bool =
             filename = filename.resolve()
         if filename.exists():
             if overwrite:
-                warn(f"Will overwrite '{filename}'")
+                print(f"{COLOR.WARNING} Will overwrite '{filename}' {COLOR.ENDC}")
         response = requests.get(url)
         if response.status_code == 200:
             if not filename.parent.exists():
@@ -61,14 +60,15 @@ def download_file(url: str, filename: Union[Path, str] = None, overwrite: bool =
             if filename.exists():
                 filename.unlink()
             filename.write_bytes(response.content)
+            print(f"{COLOR.OKGREEN} Downloaded {filename} from {url} {COLOR.ENDC}")
             return 0
     finally:
         pass
-    warn(f"Failed to download: {url}")
+    print(f"{COLOR.WARNING} Failed to download: {url} {COLOR.ENDC}")
     return 1
 
 
-def _run(args: Union[List[str], Tuple[str]], *, wait: bool = True, **kwargs) -> int:
+def _run(args: Union[List[str], Tuple[str]], *, wait: bool = True, shorten_paths=False, **kwargs) -> int:
     blue, endc = COLOR.OKBLUE, COLOR.ENDC
     cwd = kwargs.get("cwd", None)
     if cwd:
@@ -80,13 +80,15 @@ def _run(args: Union[List[str], Tuple[str]], *, wait: bool = True, **kwargs) -> 
     if kwargs.get("shell"):
         str_args = " ".join(map(str, args))
         print(
-            f"{blue}\n==={location}\n{str_args}\n===\n{endc}".replace(str(P.ROOT), "."),
+            f"{blue}\n==={location}\n{str_args}\n===\n{endc}",
+            # .replace(str(P.ROOT), "."),
             flush=True,
         )
     else:
         str_args = list(map(str, args))
         print(
-            f"{blue}\n===\n{' '.join(str_args)}{location}\n===\n{endc}".replace(str(P.ROOT), "."),
+            f"{blue}\n===\n{' '.join(str_args)}{location}\n===\n{endc}",
+            # .replace(str(P.ROOT), "."),
             flush=True,
         )
     proc = subprocess.Popen(str_args, **kwargs)

@@ -18,9 +18,11 @@ platforms:
 variables:
   CONDA_EXE: mamba
   MAX_LINE_LENGTH: 99
-  POSTGRES_DB: sysml2-postgres
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: pUtY0uR$eCr3tP@$sW0rDh3R3  # <-- IMPORTANT: This is not secure, don't use your real password
+  PSQL_DBNAME: sysml2
+  PSQL_HOST: 127.0.0.1
+  PSQL_PORT: 5432
+  PSQL_USERNAME: postgres
+  PSQL_PASSWORD: pUtY0uR$eCr3tP@$sW0rDh3R3  # <-- IMPORTANT: This is not secure, don't use your real password
   REMOTE_API_SERVER_URL: http://sysml2-sst.intercax.com  # or use http://sysml2.intercax.com
   SBT_VERSION: 1.2.8
   SYSML2_API_RELEASE: 2021-06
@@ -105,8 +107,8 @@ commands:
   sysml:api:setup:
     description: setup the SysML v2 Pilot Implementation API server
     env_spec: api_server
-    unix: python -m _scripts.api_server --install
-    windows: python -m _scripts.api_server --install
+    unix: python -m _scripts.api_server --setup
+    windows: python -m _scripts.api_server --setup
   sysml:api:start:
     description: setup the API server
     env_spec: api_server
@@ -128,6 +130,7 @@ env_specs:
     inherit_from:
     - _java
     packages:
+    - colorama
     - postgresql
     - requests
   developer:
