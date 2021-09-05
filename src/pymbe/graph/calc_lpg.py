@@ -40,13 +40,12 @@ class CalculationGroup:
         # evaluating the expression tree is a reverse-order breadth-first search
         # (cover all children of a given node and then move up to that node)
         elements = lpg.model.elements
-        for step in self.calculation_list:
-            src, tgt, type_ = step
-            src_data = lpg.model.elements[src]
-            src_metatype = src_data.get("@type")
-            source_instances = self.instance_dict.get(src)
-            target_instances = self.instance_dict.get(tgt)
-            if type_ in ("Assignment", "ValueBinding"):
+        for src_id, tgt_id, metatype in self.calculation_list:
+            src, tgt = elements[src_id], elements[tgt_id]
+            src_metatype = src._metatype
+            source_instances = self.instance_dict.get(src_id)
+            target_instances = self.instance_dict.get(tgt_id)
+            if metatype in ("Assignment", "ValueBinding"):
                 if not source_instances:
                     continue
                 if target_instances:
@@ -55,14 +54,14 @@ class CalculationGroup:
                 else:
                     print(source_instances)
                     print(f"{elements[tgt].label}, id={tgt} has no elements")
-            elif type_ == "Redefinition":
+            elif metatype == "Redefinition":
                 if not source_instances:
                     continue
                 for source_instance in source_instances:
                     for target_instance in target_instances:
                         if source_instance[:-1] == target_instance[:-1]:
                             target_instance[-1].value = source_instance[-1].value
-            elif type_ == "Output":
+            elif metatype == "Output":
                 if "Literal" in src_metatype:
                     for index, seq in enumerate(source_instances):
                         evaluate_and_apply_literal(seq[-1], target_instances[index][-1])
@@ -82,23 +81,17 @@ class CalculationGroup:
                             self.calculation_log.append(f"[FRE]... result includes {target_inst}")
 
                 elif src_metatype == "OperatorExpression":
-                    if src_data.operator == "collect":
-                        collect_sub_expressions = []
-                        collect_sub_expression_results = []
-                        collect_sub_inputs = []
-                        for member in src_data["member"]:
-                            if lpg.nodes[member["@id"]]["@type"] in COLLECTABLE_EXPRESSIONS:
-                                collect_sub_expressions.append(lpg.nodes[member["@id"]])
-                                collect_sub_expression_results.append(
-                                    lpg.nodes[lpg.nodes[member["@id"]]["result"]["@id"]]
-                                )
-
-                        for member in src_data["input"]:
-                            collect_sub_inputs.append(lpg.nodes[member["@id"]])
+                    if src.operator == "collect":
+                        collect_sub_expression_results = [
+                            member.result
+                            for member in src.member
+                            if member._metatype in COLLECTABLE_EXPRESSIONS
+                        ]
+                        collect_sub_inputs = [*src.input]
 
                         for index, m0_operator_seq in enumerate(source_instances):
                             input_point = None
-                            input_instances = self.instance_dict[collect_sub_inputs[0]["@id"]]
+                            input_instances = self.instance_dict[collect_sub_inputs[0]._id]
                             for input_inst in input_instances:
                                 if input_inst[0] == m0_operator_seq[0]:
                                     input_point = input_inst[-1]
@@ -127,14 +120,11 @@ class CalculationGroup:
                                     target_instances[index][-1],
                                 )
 
-                    elif src_data["operator"] in OPERATORS:
-                        for member in src_data["input"]:
+                    elif src.operator in OPERATORS:
+                        for member in src.input:
                             collect_sub_inputs.append(lpg.nodes[member["@id"]])
 
-                        plus_inputs = []
-
-                        for member in src_data["input"]:
-                            plus_inputs.append(lpg.nodes[member["@id"]])
+                        plus_inputs = [*src.input]
 
                         for index, m0_operator_seq in enumerate(source_instances):
                             x_point = None
@@ -149,16 +139,17 @@ class CalculationGroup:
                                             y_point = input_inst[-1]
 
                             evaluate_and_apply_atomic_binary(
-                                x_point, y_point, target_instances[index][-1], src_data["operator"]
+                                x_point, y_point, target_instances[index][-1], src["operator"]
                             )
 
                 elif src_metatype == "InvocationExpression":
-                    invoke_type = src_data.type[0]
+                    invoke_type, *other_types = src.type
+                    if other_types:
+                        raise NotImplementedError(
+                            f"Cannot handle multiple types, {src} has these types: {src.type}"
+                        )
                     if invoke_type.name == "sum":
-                        sum_inputs = []
-
-                        for member in src_data.input:
-                            sum_inputs.append(member)
+                        sum_inputs = [*src.input]
 
                         for index, m0_operator_seq in enumerate(source_instances):
                             input_point = None
@@ -173,16 +164,13 @@ class CalculationGroup:
                             )
 
                 elif src_metatype == "PathStepExpression":
-                    collect_sub_expressions = []
-                    collect_sub_expression_results = []
-                    collect_sub_inputs = []
-                    for member in src_data.member:
-                        if member.get("@type") in COLLECTABLE_EXPRESSIONS:
-                            collect_sub_expressions.append(member)
-                            collect_sub_expression_results.append(member.result)
-
-                    for input_ in src_data.input:
-                        collect_sub_inputs.append(input_)
+                    collect_sub_expressions = [
+                        member
+                        for member in src.member
+                        if member._metatype in COLLECTABLE_EXPRESSIONS
+                    ]
+                    collect_sub_expression_results = [*collect_sub_expressions]
+                    collect_sub_inputs = [*src.input]
 
                     # Base sequence is there to filter as appropriate to the expression scope
 
