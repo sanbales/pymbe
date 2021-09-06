@@ -77,20 +77,19 @@ def _run(args: Union[List[str], Tuple[str]], *, wait: bool = True, shorten_paths
     else:
         location = ""
 
+    def format_msg(msg: str) -> str:
+        msg = f"{blue}\n==={msg}\n===\n{endc}"
+        if shorten_paths:
+            msg = msg.replace(str(P.ROOT), ".")
+        return msg
+
+    str_args = " ".join(map(str, args))
     if kwargs.get("shell"):
-        str_args = " ".join(map(str, args))
-        print(
-            f"{blue}\n==={location}\n{str_args}\n===\n{endc}",
-            # .replace(str(P.ROOT), "."),
-            flush=True,
-        )
+        msg = format_msg(f"{location}\n{str_args}")
     else:
-        str_args = list(map(str, args))
-        print(
-            f"{blue}\n===\n{' '.join(str_args)}{location}\n===\n{endc}",
-            # .replace(str(P.ROOT), "."),
-            flush=True,
-        )
+        msg = format_msg(f"\n{str_args}{location}")
+    print(msg, flush=True)
+
     proc = subprocess.Popen(str_args, **kwargs)
 
     if not wait:
