@@ -18,7 +18,7 @@ class BaseWidget(ipyw.DOMWidget):
         trait=trt.Unicode(),
     ).tag(sync=True)
 
-    log_out = ipyw.Output()
+    log_out: ipyw.Output = trt.Instance(ipyw.Output, args=())
 
     @trt.validate("description")
     def _customize_description(self, proposal: trt.Bunch):

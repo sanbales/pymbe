@@ -115,7 +115,7 @@ class SysML2ClientWidget(SysML2Client, ipyw.GridspecLayout):
     def _make_commit_selector(self):
         selector = ipyw.Dropdown(
             description="Commit:",
-            options=self._get_commit_selector_options(),
+            options=self._get_commit_selector_options() if self.project_selector.options else {},
         )
         trt.link((selector, "value"), (self, "selected_commit"))
         return selector
@@ -149,7 +149,8 @@ class SysML2ClientWidget(SysML2Client, ipyw.GridspecLayout):
 
     @trt.observe("selected_project")
     def _update_commit_options(self, *_):
-        self.commit_selector.options = self._get_commit_selector_options()
+        if self.project_selector.options:
+            self.commit_selector.options = self._get_commit_selector_options()
 
     def _get_commit_selector_options(self):
         return {

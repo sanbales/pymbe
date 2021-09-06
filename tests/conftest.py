@@ -85,11 +85,6 @@ def kerbal_stable_names():
     return build_stable_id_lookups(lpg)
 
 
-@pytest.fixture
-def kerbal_client() -> SysML2Client:
-    return kerbal_model_loaded_client()
-
-
 @pytest.fixture()
 def all_kerbal_names(kerbal_client) -> list:
     all_elements = kerbal_client.model.elements

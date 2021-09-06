@@ -1,13 +1,11 @@
-import logging
-
 import networkx as nx
+import pytest
 
 from pymbe.interpretation.interp_playbooks import (
     random_generator_phase_1_multiplicities,
     random_generator_playbook_phase_2_rollup,
     random_generator_playbook_phase_2_unconnected,
 )
-from pymbe.interpretation.results import *
 from pymbe.interpretation.set_builders import (
     create_set_with_new_instances,
     extend_sequences_by_sampling,
@@ -16,7 +14,6 @@ from pymbe.interpretation.set_builders import (
 ROCKET_BUILDING = "Model::Kerbal::Rocket Building::"
 PARTS_LIBRARY = "Model::Kerbal::Parts Library::"
 SIMPLE_MODEL = "Model::Simple Parts Model::"
-FAKE_LIBRARY = "Model::Simple Parts Model::Fake Library::"
 
 
 def test_type_multiplicity_dict_building(kerbal_lpg, kerbal_stable_names):
@@ -153,7 +150,7 @@ def test_phase_3_instance_sampling(kerbal_random_stage_3_complete, kerbal_stable
     assert len(kerbal_random_stage_3_complete[booster_empty_mass_id]) > 0
 
 
-def test_phase_4_instance_sampling1(
+def test_phase_4_instance_sampling(
     kerbal_random_stage_4_complete, kerbal_stable_names, kerbal_lpg
 ):
     *_, qualified_name_to_id = kerbal_stable_names
@@ -165,14 +162,14 @@ def test_phase_4_instance_sampling1(
     ]
     sum_1_id = qualified_name_to_id[
         f"{ROCKET_BUILDING}Liquid Stage::Full Mass: Real::+ "
-        + f"(sum (engines.Mass (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
-        + f"(tanks.Full Mass (FRE.tanks)) => $result <<InvocationExpression>>"
+        + "(sum (engines.Mass (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
+        + "(tanks.Full Mass (FRE.tanks)) => $result <<InvocationExpression>>"
     ]
     full_mass_pse = qualified_name_to_id[
         f"{ROCKET_BUILDING}Liquid Stage::Full Mass: Real::+ (sum (engines.Mass"
-        + f" (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
-        + f"(tanks.Full Mass (FRE.tanks)) => $result::tanks.Full Mass (FRE.tanks)"
-        + f" => $result <<PathStepExpression>>"
+        + " (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
+        + "(tanks.Full Mass (FRE.tanks)) => $result::tanks.Full Mass (FRE.tanks)"
+        + " => $result <<PathStepExpression>>"
     ]
 
     liquid_stage_id = qualified_name_to_id[f"{ROCKET_BUILDING}Liquid Stage <<PartDefinition>>"]
@@ -206,14 +203,15 @@ def test_phase_4_instance_sampling1(
     assert len(kerbal_random_stage_4_complete[booster_empty_mass_id]) > 0
 
 
+@pytest.mark.skip()
 def test_sp_phase_1_instance_creation(
     simple_parts_random_stage_1_instances, simple_parts_stable_names
 ):
     *_, qualified_name_to_id = simple_parts_stable_names
 
-    part_id = qualified_name_to_id[f"{FAKE_LIBRARY}Part <<PartDefinition>>"]
-    port_id = qualified_name_to_id[f"{FAKE_LIBRARY}Port <<PortDefinition>>"]
-    connection_id = qualified_name_to_id[f"{FAKE_LIBRARY}Connection <<ConnectionDefinition>>"]
+    part_id = qualified_name_to_id["Model::Parts::Part <<PartDefinition>>"]
+    port_id = qualified_name_to_id["Model::Ports::Port <<PortDefinition>>"]
+    connection_id = qualified_name_to_id["Model::Connections::Connection <<ConnectionDefinition>>"]
 
     power_user_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part <<PartUsage>>"
@@ -226,14 +224,15 @@ def test_sp_phase_1_instance_creation(
     assert power_user_id not in simple_parts_random_stage_1_instances
 
 
+@pytest.mark.skip()
 def test_sp_phase_1_singleton_instances(
     simple_parts_random_stage_1_complete, simple_parts_stable_names
 ):
     *_, qualified_name_to_id = simple_parts_stable_names
 
-    part_id = qualified_name_to_id[f"{FAKE_LIBRARY}Part <<PartDefinition>>"]
-    port_id = qualified_name_to_id[f"{FAKE_LIBRARY}Port <<PortDefinition>>"]
-    connection_id = qualified_name_to_id[f"{FAKE_LIBRARY}Connection <<ConnectionDefinition>>"]
+    part_id = qualified_name_to_id["Model::Parts::Part <<PartDefinition>>"]
+    port_id = qualified_name_to_id["Model::Ports::Port <<PortDefinition>>"]
+    connection_id = qualified_name_to_id["Model::Connections::Connection <<ConnectionDefinition>>"]
 
     power_user_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part <<PartUsage>>"
@@ -246,6 +245,7 @@ def test_sp_phase_1_singleton_instances(
     assert power_user_id not in simple_parts_random_stage_1_complete
 
 
+@pytest.mark.skip()
 def test_sp_phase_2_instance_creation(
     simple_parts_lpg,
     simple_parts_random_stage_1_complete,
@@ -254,12 +254,12 @@ def test_sp_phase_2_instance_creation(
 ):
     *_, qualified_name_to_id = simple_parts_stable_names
 
-    connection_id = qualified_name_to_id[f"{FAKE_LIBRARY}Connection <<ConnectionDefinition>>"]
+    connection_id = qualified_name_to_id["Model::Connections::Connection <<ConnectionDefinition>>"]
     power_user_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part <<PartUsage>>"
     ]
-    part_id = qualified_name_to_id[f"{FAKE_LIBRARY}Part <<PartDefinition>>"]
-    port_id = qualified_name_to_id[f"{FAKE_LIBRARY}Port <<PortDefinition>>"]
+    part_id = qualified_name_to_id["Model::Parts::Part <<PartDefinition>>"]
+    port_id = qualified_name_to_id["Model::Ports::Port <<PortDefinition>>"]
 
     scg = simple_parts_lpg.get_projection("Part Definition")
 
@@ -279,20 +279,18 @@ def test_sp_phase_2_instance_creation(
     assert len(simple_parts_random_stage_1_complete[port_id]) == 6
 
 
+@pytest.mark.skip()
 def test_sp_phase_3_instance_sampling(
     simple_parts_random_stage_3_complete, simple_parts_stable_names
 ):
     *_, qualified_name_to_id = simple_parts_stable_names
 
-    connection_id = qualified_name_to_id[f"{FAKE_LIBRARY}Connection <<ConnectionDefinition>>"]
     power_source_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power Source: Part <<PartUsage>>"
     ]
     power_user_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part <<PartUsage>>"
     ]
-    part_id = qualified_name_to_id[f"{FAKE_LIBRARY}Part <<PartDefinition>>"]
-    port_id = qualified_name_to_id[f"{FAKE_LIBRARY}Port <<PortDefinition>>"]
     power_in_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part::Power In: Port <<PortUsage>>"
     ]

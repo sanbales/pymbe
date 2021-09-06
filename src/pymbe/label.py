@@ -9,7 +9,7 @@ def get_label(element: Element) -> str:
     metatype = element._metatype
     model = element._model
     data = element._data
-    name = data.get("name")
+    name = data.get("name") or data.get("effectiveName")
 
     # Get the element type(s)
     types: list = data.get("type") or []
@@ -52,9 +52,9 @@ def get_label_for_expression(
         "Expression",
         "FeatureReferenceExpression",
         "InvocationExpression",
+        "NullExpression",
         "OperatorExpression",
         "PathStepExpression",
-        "NullExpression",
     ):
         raise NotImplementedError(f"Cannot create M1 signature for: {metatype}")
 
@@ -85,7 +85,9 @@ def get_label_for_expression(
         inputs = []
     if isinstance(inputs, Element):
         inputs = [inputs]
-    input_names = [an_input.name for an_input in inputs if an_input.name]
+    input_names = [
+        (an_input.name or an_input.effectiveName or "Unnamed Input") for an_input in inputs
+    ]
     try:
         result: Element = expression.result
     except AttributeError:
@@ -117,8 +119,8 @@ def get_label_for_expression(
         prefix = ".".join(path_step_names)
     inputs = f""" ({", ".join(input_names)})""" if input_names else ""
     if result is None:
-        return f"""{prefix}{inputs} => {"Unnamed Result"}"""
-    return f"""{prefix}{inputs} => {result.name or "Unnamed Result"}"""
+        return f"""{prefix}{inputs} => {"Null Result"}"""
+    return f"""{prefix}{inputs} => {result.name or result.effectiveName}"""
 
 
 def get_label_for_multiplicity(multiplicity: Element) -> str:

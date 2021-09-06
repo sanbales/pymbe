@@ -110,15 +110,16 @@ def test_expression_sequence_templates(kerbal_lpg, kerbal_stable_names):
 
     top_plus = qualified_name_to_id[
         f"{ROCKET_BUILDING}Liquid Stage::Full Mass: Real::+ (sum (engines.Mass"
-        f" (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => "
-        f"$result <<OperatorExpression>>"
+        " (FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => "
+        "$result <<OperatorExpression>>"
     ]
 
     fre_1_result = qualified_name_to_id[
         f"{ROCKET_BUILDING}Liquid Stage::Full Mass: Real::+ (sum (engines.Mass "
-        + f"(FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
-        + f"(tanks.Full Mass (FRE.tanks)) => $result::tanks.Full Mass (FRE.tanks) => "
-        + f"$result::FRE.Full Mass::FRE.Full Mass <<Feature>>"
+        "(FRE.engines)), sum (tanks.Full Mass (FRE.tanks))) => $result::sum "
+        "(tanks.Full Mass (FRE.tanks)) => $result::tanks.Full Mass (FRE.tanks) => "
+        "$result::FRE.tanks <<Feature>>"
+        # Used to be: "$result::FRE.Full Mass::FRE.Full Mass <<Feature>>"
     ]
 
     expr_sequences = build_expression_sequence_templates(lpg=kerbal_lpg)

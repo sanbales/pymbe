@@ -53,6 +53,8 @@ class ElementInspector(ipyw.Output, BaseWidget):
     @trt.observe("model")
     def update(self, *_):
         with self.log_out:
+            if not self.model:
+                return
             self.clean_data = {
                 id_: self.get_clean_data(element) for id_, element in self.model.elements.items()
             }

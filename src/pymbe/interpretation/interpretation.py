@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..label import get_label
-from ..model import Element, Model
+from ..model import Element, InstanceDictType, Model
 
 # What visual representation to use for instances based on their M1 Metatype
 REPRESENTATION_BY_METATYPE = dict(
@@ -173,7 +173,7 @@ def shorten_name(name: str, shorten_pre_bake: dict = None) -> str:
     return name
 
 
-def repack_instance_dictionaries(instance_dict: dict, mdl: Model):
+def repack_instance_dictionaries(instance_dict: InstanceDictType, mdl: Model):
     """
     Temporary method to repack the instance dictionaries into objects to be sure
     this is how we want things to work

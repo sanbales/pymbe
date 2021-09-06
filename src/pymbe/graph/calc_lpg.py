@@ -1,13 +1,17 @@
+from typing import List, Tuple
+
 import networkx as nx
 
 from ..interpretation.m0_operators import (
+    OPERATORS,
+    evaluate_and_apply_atomic_binary,
     evaluate_and_apply_collect,
     evaluate_and_apply_dot,
     evaluate_and_apply_fre,
     evaluate_and_apply_literal,
-    evaluate_and_apply_plus,
     evaluate_and_apply_sum,
 )
+from ..model import InstanceDictType
 from .lpg import SysML2LabeledPropertyGraph
 
 COLLECTABLE_EXPRESSIONS = ("Expression", "FeatureReferenceExpression")
@@ -16,7 +20,12 @@ COLLECTABLE_EXPRESSIONS = ("Expression", "FeatureReferenceExpression")
 class CalculationGroup:
     """A graph to represent the active expression tree in a model."""
 
-    def __init__(self, eig: nx.MultiDiGraph, instance_dict: dict, calculation_list: list):
+    def __init__(
+        self,
+        eig: nx.MultiDiGraph,
+        instance_dict: InstanceDictType,
+        calculation_list: List[Tuple[str, str, str]],
+    ):
         self.graph = eig
         self.instance_dict = instance_dict
 
@@ -118,7 +127,7 @@ class CalculationGroup:
                                     target_instances[index][-1],
                                 )
 
-                    elif src_data["operator"] == "+":
+                    elif src_data["operator"] in OPERATORS:
                         for member in src_data["input"]:
                             collect_sub_inputs.append(lpg.nodes[member["@id"]])
 
@@ -139,10 +148,8 @@ class CalculationGroup:
                                         elif input_index == 1:
                                             y_point = input_inst[-1]
 
-                            evaluate_and_apply_plus(
-                                x_point,
-                                y_point,
-                                target_instances[index][-1],
+                            evaluate_and_apply_atomic_binary(
+                                x_point, y_point, target_instances[index][-1], src_data["operator"]
                             )
 
                 elif src_metatype == "InvocationExpression":

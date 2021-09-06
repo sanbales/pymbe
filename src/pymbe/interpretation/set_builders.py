@@ -1,7 +1,6 @@
 import itertools
 import random
 from typing import Dict, List
-from warnings import warn
 
 from ..model import Element
 from .interpretation import LiveExpressionNode, ValueHolder
@@ -15,9 +14,8 @@ from .interpretation import LiveExpressionNode, ValueHolder
 # 2. Sub-select from other sets (a la feature dictionaries)
 
 # In both cases, use a reference sequence to find the minimal length intepretations
-# Both classifiers and features can be made this way, just difference of lengths
+# Both classifiers and features can be made this way, just difference of lengthh
 
-MAX_MULTIPLICITY = 100
 VALUE_HOLDER_TYPES = ("AttributeDefinition", "AttributeUsage", "DataType")
 
 
@@ -93,16 +91,13 @@ def extend_sequences_by_sampling(
     #        have the same type!
 
     total_draw, draws_per = 0, []
-    if upper_mult > MAX_MULTIPLICITY:
-        warn(f"Upper multiplicity is capped from {upper_mult} down to {MAX_MULTIPLICITY}")
-        upper_mult = MAX_MULTIPLICITY
     for _ in range(0, len(previous_sequences)):
         draw = random.randint(lower_mult, upper_mult)
         total_draw = total_draw + draw
         draws_per.append(draw)
 
     set_extended = []
-    if len(sample_set) == 0 and fallback_to_generate:
+    if not sample_set and fallback_to_generate:
         new_list = [fallback_type() for _ in range(total_draw)]
 
         last_draw = 0
@@ -170,11 +165,6 @@ def extend_sequences_with_new_value_holder(
 
     for indx, seq in enumerate(previous_sequences):
         new_holder = ValueHolder(seq, base_name, None, base_ele, indx)
-
-        new_sequence = []
-        new_sequence += seq
-        new_sequence.append(new_holder)
-
-        new_sequences.append(new_sequence)
+        new_sequences.append(seq + [new_holder])
 
     return new_sequences

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Union
 from warnings import warn
 
+import ipywidgets as ipyw
 import requests
 import traitlets as trt
 from dateutil import parser
@@ -15,6 +16,7 @@ from .model import Model
 
 TIMEZONES = {
     "CEST": "UTC+2",
+    "CET": "UTC+1",
     "EDT": "UTC-4",
     "EST": "UTC-5",
     "CDT": "UTC-5",
@@ -74,6 +76,8 @@ class SysML2Client(trt.HasTraits):
 
     name_hints = trt.Dict()
 
+    log_out: ipyw.Output = trt.Instance(ipyw.Output, args=())
+
     _next_url_regex = re.compile(r'<(http://.*)>; rel="next"')
 
     @trt.default("projects")
@@ -94,7 +98,11 @@ class SysML2Client(trt.HasTraits):
                 name=name,
             )
 
-        projects = self._retrieve_data(self.projects_url)
+        try:
+            projects = self._retrieve_data(self.projects_url)
+        except Exception as exc:  # pylint: disable=broad-except
+            warn(f"Could not retrieve projects from {self.projects_url}.\n{exc}")
+            return {}
 
         results = {project["@id"]: process_project_safely(project) for project in projects}
 
@@ -110,6 +118,8 @@ class SysML2Client(trt.HasTraits):
 
     @trt.observe("selected_commit")
     def _update_elements(self, *_, elements=None):
+        if not (self.selected_commit or elements):
+            return
         elements = elements or []
         self.model = Model.load(
             elements=elements,

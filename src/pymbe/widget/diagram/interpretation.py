@@ -1,5 +1,3 @@
-import typing as ty
-
 import ipywidgets as ipyw
 import traitlets as trt
 from ipyelk import Diagram, ElementLoader
@@ -9,6 +7,7 @@ from ipyelk.elements import layout_options as opt
 from ...graph import SysML2LabeledPropertyGraph
 from ...interpretation.interp_playbooks import random_generator_playbook
 from ...interpretation.interpretation import repack_instance_dictionaries
+from ...model import InstanceDictType
 from ..core import BaseWidget
 from .part_diagram import PartDiagram
 from .tools import BUTTON_ICONS
@@ -43,7 +42,10 @@ class M0Viewer(ipyw.Box, BaseWidget):
         args=(),
         help="The LPG of the project currently loaded.",
     )
-    interpretation: ty.Dict = trt.Dict()
+    interpretation: InstanceDictType = trt.Dict()
+
+    package_selector: ipyw.SelectMultiple = trt.Instance(ipyw.SelectMultiple, args=())
+
     port_size: int = trt.Integer(15)
 
     @trt.validate("children")
@@ -85,7 +87,7 @@ class M0Viewer(ipyw.Box, BaseWidget):
 
         buttons += [regen, refresh]
 
-        toolbar.children = [style, *buttons, progress_bar, close_btn]
+        toolbar.children = [style, *buttons, self.package_selector, progress_bar, close_btn]
 
         return diagram
 
@@ -93,12 +95,24 @@ class M0Viewer(ipyw.Box, BaseWidget):
     def _make_layout(self):
         return dict(height="100%")
 
+    def _get_model_packages(self):
+        if not self.model:
+            return {}
+        return dict(
+            sorted(
+                (package.name, package) for package in self.model.ownedMetatype.get("Package", [])
+            )
+        )
+
     def update(self, *_):
-        pass
+        self.package_selector.options = self._get_model_packages()
 
     def _generate_random_interpretation(self, *_):
         with self.log_out:
-            self.interpretation = random_generator_playbook(self.lpg)
+            self.interpretation = random_generator_playbook(
+                lpg=self.lpg,
+                filtered_feat_packages=self.package_selector.value,
+            )
 
     @trt.observe("interpretation")
     def _update_for_new_interpretation(self, *_):

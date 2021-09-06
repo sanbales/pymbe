@@ -63,7 +63,9 @@ def test_basic_kerbal_solve(kerbal_lpg, kerbal_random_stage_5_complete, kerbal_s
     assert not set(ft200_masses).difference({1.125, None}), f"FT-200 massess: {ft200_masses}"
 
 
-def test_kerbal_solve2(kerbal_lpg, kerbal_random_stage_5_complete, kerbal_stable_names):
+def test_path_step_expression_kerbal_solve(
+    kerbal_lpg, kerbal_random_stage_5_complete, kerbal_stable_names
+):
 
     # check that Path Step Expression has expected inputs
 

@@ -4,8 +4,6 @@ from typing import List
 
 import networkx as nx
 
-from pymbe.interpretation.set_builders import MAX_MULTIPLICITY
-
 from ..graph.lpg import SysML2LabeledPropertyGraph
 from ..label import get_label
 from ..model import Element
@@ -39,6 +37,9 @@ def roll_up_multiplicity(
     feature: Element,
     bound: str,
 ) -> int:
+
+    max_multiplicity = lpg.model.max_multiplicity
+
     banded_featuring_graph = lpg.get_projection("Expanded Banded")
 
     banded_roots = [
@@ -66,7 +67,7 @@ def roll_up_multiplicity(
                     [
                         min(
                             feature_multiplicity(model.elements[element_id], bound),
-                            MAX_MULTIPLICITY,
+                            max_multiplicity,
                         )
                         for element_id in part_path
                     ]
@@ -76,7 +77,7 @@ def roll_up_multiplicity(
             print("Found no path when rolling up multiplicity.")
         except nx.NodeNotFound:
             # nothing to roll up, so just use own multiplicity
-            total_mult = min(feature_multiplicity(feature, bound), MAX_MULTIPLICITY)
+            total_mult = min(feature_multiplicity(feature, bound), max_multiplicity)
 
     return total_mult
 
@@ -96,6 +97,8 @@ def roll_up_multiplicity_for_type(
     if element._id in ptg.nodes:
         feat_ids = get_features_typed_by_type(lpg, element._id)
         for feat_id in feat_ids:
+            if lpg.model.elements[feat_id].isAbstract:
+                continue
             running_total += roll_up_multiplicity(
                 lpg,
                 all_elements[feat_id],

@@ -2,7 +2,6 @@ import ipywidgets as ipyw
 import traitlets as trt
 from wxyz.lab import DockBox, DockPop
 
-from .client import SysML2ClientWidget
 from .containment import ContainmentTree
 from .diagram import M0Viewer, M1Viewer
 from .inspector import ElementInspector
@@ -12,11 +11,7 @@ from .inspector import ElementInspector
 class UI(DockBox):
     """A user interface for the integrated widget"""
 
-    # buttons
-    pop_log_out: ipyw.Button = trt.Instance(ipyw.Button)
-
     # widgets
-    client: SysML2ClientWidget = trt.Instance(SysML2ClientWidget)
     tree: ContainmentTree = trt.Instance(ContainmentTree, args=())
     inspector: ElementInspector = trt.Instance(ElementInspector, args=())
     m0_viewer: M0Viewer = trt.Instance(M0Viewer, args=())
@@ -30,16 +25,15 @@ class UI(DockBox):
     # config parameters
     diagram_height: int = trt.Int(default_value=65, min=25, max=100)
 
-    log_out = ipyw.Output()
+    log_out: ipyw.Output = trt.Instance(ipyw.Output, args=())
 
     def __init__(self, host_url, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.description = "SysML Model"
 
-        self.client = SysML2ClientWidget(host_url=host_url)
+        self.tree.client.host_url = host_url
 
         self.children = [
-            self.client,
             self.tree,
             self.inspector,
             self.m1_viewer,
@@ -48,39 +42,29 @@ class UI(DockBox):
 
         self.dock_layout = dict(
             type="split-area",
-            orientation="vertical",
+            orientation="horizontal",
             children=[
                 dict(type="tab-area", widgets=[0], currentIndex=0),
                 dict(
-                    type="split-area",
-                    orientation="horizontal",
-                    children=[
-                        dict(type="tab-area", widgets=[1], currentIndex=0),
-                        dict(
-                            type="tab-area",
-                            widgets=[2, 3, 4],
-                            currentIndex=0,
-                        ),
-                    ],
-                    sizes=[0.22, 0.78],
+                    type="tab-area",
+                    widgets=[1, 2, 3],
+                    currentIndex=0,
                 ),
             ],
-            sizes=[0.20, 0.80],
+            sizes=[0.22, 0.78],
         )
 
         # TODO: find a way to avoid doing these three lines
-        self.client._set_layout()
-        self.tree.layout.overflow_y = "auto"
         self._update_diagram_height()
 
-        all_widgets = self.tree, self.inspector, self.m1_viewer, self.m0_viewer
+        all_widgets = self.inspector, self.m1_viewer, self.m0_viewer
 
         for widget in all_widgets:
-            widget.log_out = self.log_out
+            trt.link((self, "log_out"), (widget, "log_out"))
 
         self.model_links = [
             trt.link(
-                (self.client, "model"),
+                (self.tree, "model"),
                 (widget, "model"),
             )
             for widget in all_widgets
@@ -90,7 +74,7 @@ class UI(DockBox):
                 (self.tree, "selected"),
                 (widget, "selected"),
             )
-            for widget in all_widgets[1:]
+            for widget in all_widgets
         ]
         self.lpg_links = [
             trt.link(
@@ -99,16 +83,6 @@ class UI(DockBox):
             )
         ]
 
-    @trt.default("pop_log_out")
-    def _make_pop_log_out_button(self):
-        button = ipyw.Button(
-            description="",
-            icon="book",
-            tooltip="Pop Log",
-        )
-        button.on_click(self._pop_log_out)
-        return button
-
     @trt.observe("diagram_height")
     def _update_diagram_height(self, *_):
         self.m0_viewer.layout.height = f"{self.diagram_height}vh"
@@ -116,7 +90,16 @@ class UI(DockBox):
 
     @classmethod
     def new(cls, host_url: str) -> DockPop:
-        return DockPop([cls(host_url=host_url)], description="SysML Model")
+        sysml_ui = cls(host_url=host_url)
+        dock_pop = DockPop([sysml_ui], description="SysML Model")
 
-    def _pop_log_out(self):
-        DockPop([self.log_out], mode="split-right")
+        def _add(widget: ipyw.DOMWidget, mode="split-right"):
+            """Add the example preview in a new JupyterLab DockPanel tab"""
+            dock_pop.mode = mode
+            dock_pop.children += (widget,)
+
+        for child in sysml_ui.children:
+            if "add_widget" in child.trait_names():
+                child.add_widget = _add
+
+        return dock_pop

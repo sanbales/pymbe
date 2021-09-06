@@ -1,4 +1,23 @@
 # These adapters describe how to make SysML subgraphs of the LPG
+# A projection must have:
+#   - a unique name, e.g., "Complete"
+#   - a description
+# filters:
+#   - `excluded_edge_types`: the metatype of relationships to ignore
+#   - `excluded_node_types`: the metatype of non-relationship elements to ignore
+#   - `included_edge_types`: the metatype of relationships to bring in
+#   - `included_node_types`: the metatype of non-relationship elements to bring in
+# modifiers:
+#   - `reversed_edge_types`: the metatype of the relationships to reverse the order
+#
+# Notes:
+# Filters:
+#   It is not possible to define both inclusion and exclusion for a given type (nodes/edges).
+#
+# Implied Edges:
+#   To include implied edge generators, include the node types for generators defined in the code.
+#   Adding a new implied edge, requires modifying the code that defines how to manipulate the data
+#   to generate the new edges.
 
 Complete:
   description: >
@@ -59,6 +78,7 @@ Expression Value:
     - InvocationExpression
     - LiteralInteger
     - LiteralReal
+    - LiteralRational
     - OperatorExpression
     - PathStepExpression
   included_edge_types:
