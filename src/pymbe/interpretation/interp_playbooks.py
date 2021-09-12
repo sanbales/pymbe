@@ -188,7 +188,7 @@ def random_generator_playbook_phase_1_singletons(
     Calculates instances for classifiers that aren't directly typed (but may have
     members or be superclasses for model elements that have sequences generated for them).
 
-    :param lpg: Active SysML graph
+    :param model: A SysML v2 model
     :param scg: Subclassing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
@@ -215,7 +215,6 @@ def random_generator_playbook_phase_2_rollup(
     Build up set of sequences for classifiers by taking the union of sequences
     already generated for the classifier subclasses.
 
-    :param lpg: Active SysML graph
     :param scg: Subclassing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
@@ -242,7 +241,7 @@ def random_generator_playbook_phase_2_unconnected(
     """
     Final pass to generate sequences for classifiers that haven't been given sequences yet.
 
-    :param all_elements: Full dictionary of elements in the working memory
+    :param model: A SysML v2 Model
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
     """
@@ -271,10 +270,8 @@ def random_generator_playbook_phase_3(
     classifier sequences with randomly selected instances of classifiers that type
     nested features.
 
+    :param model: The SysML v2 Model
     :param feature_sequences: Sequences that represent the nesting structure of the features
-    :param all_elements: Full dictionary of elements in the working memory
-    :param lpg: Active SysML graph
-    :param ptg: Part Typing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: (Temporarily return a trace of actions) None - side effect is addition of new
         instances to the instances dictionary
@@ -507,9 +504,9 @@ def random_generator_playbook_phase_4(
     """
     Generate interpreting sequences for Expressions in the model
 
+    :param model: The SysML v2 Model
     :param expr_sequences: Sequences that represent the membership structure for expressions
         in the model and the features to which expressions provide values
-    :param lpg: Active SysML graph
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
     """
@@ -618,6 +615,8 @@ def random_generator_playbook_phase_5(
 
         try:
             target_sequences = instances_dict[target.chainingFeature[-1]._id]
+        except IndexError as exc:
+            raise KeyError(f"No chaining feature sequences for {target}!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {target}!") from exc
 
@@ -729,7 +728,6 @@ def build_expression_sequence_templates(lpg: SysML2LabeledPropertyGraph) -> List
 
     :return: list of lists of Element IDs (as strings) representing feature nesting.
     """
-
     evg = lpg.get_projection("Expression Value")
 
     sorted_feature_groups = []
