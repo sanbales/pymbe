@@ -611,6 +611,8 @@ def random_generator_playbook_phase_5(
 
         try:
             source_sequences = instances_dict[source.chainingFeature[-1]._id]
+        except IndexError as exc:
+            raise KeyError(f"No chaining feature sequences for {source}!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {source}!") from exc
 
