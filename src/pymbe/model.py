@@ -351,12 +351,18 @@ class Element:  # pylint: disable=too-many-instance-attributes
         if isinstance(item, (dict, str)):
             item = self.__safe_dereference(item)
         elif isinstance(item, (list, tuple, set)):
-            items = [self.__safe_dereference(subitem) for subitem in item]
+            items = [self.__safe_dereference(sub_item) for sub_item in item]
             return type(item)(items)
         return item
 
     def __hash__(self):
-        return hash(self._data["@id"])
+        id_ = self._data.get("@id")
+        if id_ is None:
+            warn(
+                f"Element (oid={id(self)}, data={self._data}) has no '@id'! Generating one for it"
+            )
+            id_ = self._data["@id"] = str(uuid4())
+        return hash(id_)
 
     def __lt__(self, other):
         if isinstance(other, str):

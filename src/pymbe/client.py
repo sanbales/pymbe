@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 from warnings import warn
 
 import ipywidgets as ipyw
@@ -56,7 +56,7 @@ class APIClient(trt.HasTraits, ModelClient):
     )
 
     page_size = trt.Integer(
-        default_value=5000,
+        default_value=500,
         min=1,
     )
 
@@ -135,28 +135,33 @@ class APIClient(trt.HasTraits, ModelClient):
         return f"{self.commits_url}/{self.selected_commit}/elements"
 
     def reset_cache(self):
-        self._retrieve_data.cache_clear()
+        self._retrieve_paginated_data.cache_clear()
+
+    @staticmethod
+    def _retrieve_data(
+        url: str, process_response: bool = True
+    ) -> Union[List, Dict, requests.Response]:
+        response = requests.get(url)
+        if not response.ok:
+            raise requests.HTTPError(
+                f"Failed to retrieve elements from '{url}', reason: {response.reason}"
+            )
+        if not process_response:
+            return response
+        return response.json()
 
     @lru_cache(maxsize=URL_CACHE_SIZE)
-    def _retrieve_data(self, url: str) -> List[Dict]:
+    def _retrieve_paginated_data(self, url: str, on_page: Callable = None, remove_empty_data: bool = True) -> List[Dict]:
         """Retrieve model data from a URL using pagination"""
-        result = []
+        data = []
         while url:
-            response = requests.get(url)
-
-            if not response.ok:
-                raise requests.HTTPError(
-                    f"Failed to retrieve elements from '{url}', reason: {response.reason}"
-                )
-            data = response.json()
-            if not isinstance(data, list):
-                return data
-            result += data
-
+            response = self._retrieve_data(url, process_response=False)
+            data += response.json()
+            if on_page:
+                on_page()
             link = response.headers.get("Link")
             if not link:
                 break
-
             urls = self._next_url_regex.findall(link)
             if len(urls) > 1:
                 raise requests.HTTPError(
@@ -164,7 +169,9 @@ class APIClient(trt.HasTraits, ModelClient):
                     ", ".join(map(lambda x: f"<{x}>", urls))
                 )
             url = urls[0] if urls else None
-        return result
+        if remove_empty_data:
+            return [item for item in data if item]
+        return data
 
     @staticmethod
     def _parse_timestamp(timestamp: str) -> datetime:
@@ -184,14 +191,21 @@ class APIClient(trt.HasTraits, ModelClient):
         commits = sorted(self._retrieve_data(self.commits_url), key=lambda x: x["timestamp"])
         return {commit["@id"]: clean_fields(commit) for commit in commits}
 
-    def get_model(self) -> Optional[Model]:
+    def get_model(self, on_page: Callable = None) -> Optional[Model]:
         """Download a model from the current `elements_url`."""
         if not self.selected_commit:
             return None
         url = self.elements_url
         if self.page_size:
             url += f"?page[size]={self.page_size}"
-        elements = self._retrieve_data(url)
+        elements = self._retrieve_paginated_data(url=url, on_page=on_page)
+        total = len(elements)
+        # Remove bogus empty elements
+        elements = [
+            element for element in elements if isinstance(element, dict) and "@id" in element
+        ]
+        if total > len(elements):
+            warn(f"Downloaded {total-len(elements)} bad elements, will have to ignore them")
         if not elements:
             return None
 
