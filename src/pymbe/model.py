@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Collection, Dict, List, Tuple, Union
+from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
 
@@ -115,7 +115,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
     ) -> "Model":
         """Make a Model from an iterable container of elements"""
         return Model(
-            elements={element["@id"]: element for element in elements},
+            elements={element["@id"]: element for element in elements if "@id" in element},
             **kwargs,
         )
 
@@ -140,7 +140,9 @@ class Model:  # pylint: disable=too-many-instance-attributes
             element for element in self.elements.values() if element._metatype == "Package"
         )
 
-    def get_element(self, element_id: str, fail: bool = True, resolve: bool = True) -> "Element":
+    def get_element(
+        self, element_id: str, fail: bool = True, resolve: bool = True
+    ) -> Optional["Element"]:
         """Get an element, or retrieve it from the API if it is there"""
         element = self.elements.get(element_id)
         if element and not isinstance(element, Element):
@@ -195,7 +197,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
             warn(f"Overwriting {filepath}")
         filepath.write_text(
             json.dumps(
-                [element._data for element in self.elements.values()],
+                [element._data for element in self.elements.values() if element._data],
                 indent=indent,
             ),
         )
