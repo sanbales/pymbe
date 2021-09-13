@@ -151,7 +151,9 @@ class APIClient(trt.HasTraits, ModelClient):
         return response.json()
 
     @lru_cache(maxsize=URL_CACHE_SIZE)
-    def _retrieve_paginated_data(self, url: str, on_page: Callable = None, remove_empty_data: bool = True) -> List[Dict]:
+    def _retrieve_paginated_data(
+        self, url: str, on_page: Callable = None, remove_empty_data: bool = True
+    ) -> List[Dict]:
         """Retrieve model data from a URL using pagination"""
         data = []
         while url:
