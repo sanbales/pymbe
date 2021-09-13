@@ -59,10 +59,11 @@ def random_generator_playbook(
     Main routine to execute a playbook to randomly generate sequences as an interpretation
     of a SysML v2 model
 
-    :param lpg: Labeled propery graph of the M1 model
+    :param lpg: Labeled property graph of the M1 model
     :param name_hints: A dictionary to make labeling instances more clean
     :param filtered_feat_packages: A list of packages by which to down filter feature and
         expression sequence templates
+    :param phase_limit: Stop process before running the specified phase
     :return: A dictionary of sequences keyed by the id of a given M1 type
     """
 
@@ -117,6 +118,9 @@ def random_generator_playbook(
     # PHASE 4: Expand sequences to support computations
     # Move through existing sequences and then start to pave further with new steps
     random_generator_playbook_phase_4(lpg.model, expression_sequences, instances_dict)
+
+    if phase_limit < 5:
+        return instances_dict
 
     # PHASE 5: Interpret connection usages and map ConnectionEnds at M0
 
@@ -609,14 +613,14 @@ def random_generator_playbook_phase_5(
         try:
             source_sequences = instances_dict[source.chainingFeature[-1]._id]
         except IndexError as exc:
-            raise KeyError(f"No chaining feature sequences for {source}!") from exc
+            raise IndexError(f"{source} has no chainingFeatures!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {source}!") from exc
 
         try:
             target_sequences = instances_dict[target.chainingFeature[-1]._id]
         except IndexError as exc:
-            raise KeyError(f"No chaining feature sequences for {target}!") from exc
+            raise IndexError(f"{target} has no chainingFeatures!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {target}!") from exc
 
