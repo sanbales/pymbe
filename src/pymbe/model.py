@@ -210,7 +210,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
         for element in elements:
             label = get_label(element=element)
             if label:
-                element._derived["label"] = label
+                element._label = label
 
     def _add_owned(self):
         """Adds owned elements, relationships, and metatypes to the model"""
@@ -268,6 +268,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
     _model: Model
 
     _id: str = field(default_factory=lambda: str(uuid4()))
+    _label: str = None
     _metatype: str = "Element"
     _derived: Dict[str, List] = field(default_factory=lambda: defaultdict(list))
     # TODO: replace this with instances sequences
@@ -378,7 +379,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
 
     @property
     def label(self) -> str:
-        return self._derived.get("label")
+        return self._label
 
     @property
     def relationships(self) -> Dict[str, Any]:
