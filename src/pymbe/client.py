@@ -56,7 +56,7 @@ class APIClient(trt.HasTraits, ModelClient):
     )
 
     page_size = trt.Integer(
-        default_value=500,
+        default_value=200,
         min=1,
     )
 
@@ -226,4 +226,5 @@ class APIClient(trt.HasTraits, ModelClient):
         try:
             return self._retrieve_data(f"{self.elements_url}/{element_id}")
         except requests.HTTPError:
-            return {}
+            warn(f"Could not retrieve data for {element_id}")
+            return {"@id": element_id, "@type": "Element"}

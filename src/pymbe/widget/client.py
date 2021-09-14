@@ -213,16 +213,16 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
             progress.value = 0
             progress.layout.visibility = "visible"
 
-            progress.value += 0.1
+            progress.value += 0.05
 
-            step_per_element = 0.001
+            step_per_element = 0.0007
             data = dict(page=0)
 
             def on_page():
                 data["page"] += 1
                 page = data["page"]
                 elements = page * self.page_size
-                if (elements * step_per_element) > (0.8 * progress.max):
+                if (elements * step_per_element) > (0.75 * progress.max):
                     progress.max *= 1.5
                 progress.description_tooltip = f"Retrieved page {page} ({elements} model elements)"
                 progress.value += self.page_size * step_per_element

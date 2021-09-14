@@ -356,7 +356,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
         return item
 
     def __hash__(self):
-        id_ = self._data.get("@id")
+        id_ = self._id
         if id_ is None:
             warn(
                 f"Element (oid={id(self)}, data={self._data}) has no '@id'! Generating one for it"
