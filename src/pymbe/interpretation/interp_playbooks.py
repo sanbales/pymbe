@@ -648,20 +648,23 @@ def random_generator_playbook_phase_5(
                 f" {min_side} and {max_side}."
             ) from exc
 
-        connector_ends_sequences = (source_sequences, target_sequences)
+        connected_feature_sequences = (source_sequences, target_sequences)
         connector_sequences = instances_dict[connector_id]
-        for connector_end, connector_end_indeces, connector_end_sequences in zip(
-            connector_ends, connector_ends_indeces, connector_ends_sequences
+        for connector_end, connector_end_indeces, connected_feature_sequence in zip(
+            connector_ends, connector_ends_indeces, connected_feature_sequences
         ):
             instances_dict[connector_end._id] = [
-                [
-                    sequence
-                    + connector_end_sequences[
-                        connector_end_indeces[idx % len(connector_end_sequences)]
-                    ][1:]
-                ]
-                for idx, sequence in enumerate(connector_sequences)
+                connector_sequences[idx]
+                + connected_feature_sequence[
+                    connector_end_indeces[idx]
+                ][1:]
+                for idx in range(min(len(connector_sequences), max_side))
             ]
+            for idx in range(len(connector_sequences) - max_side):
+                connector_sequence = connector_sequences[idx + max_side]
+                instances_dict[connector_end._id] += [
+                    connector_sequence + sample(connected_feature_sequence, 1)[0][1:]
+                ]
 
 
 def build_sequence_templates(lpg: SysML2LabeledPropertyGraph) -> List[List[str]]:
