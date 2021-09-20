@@ -655,9 +655,7 @@ def random_generator_playbook_phase_5(
         ):
             instances_dict[connector_end._id] = [
                 connector_sequences[idx]
-                + connected_feature_sequence[
-                    connector_end_indeces[idx]
-                ][1:]
+                + connected_feature_sequence[connector_end_indeces[idx]][1:]
                 for idx in range(min(len(connector_sequences), max_side))
             ]
             for idx in range(len(connector_sequences) - max_side):
