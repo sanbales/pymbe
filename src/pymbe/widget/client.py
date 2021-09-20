@@ -29,6 +29,8 @@ class FileLoader(FileBox, BaseWidget):
         self.children = []
 
     def _load_model(self, change: trt.Bunch):
+        if not change.new:
+            return
         with self.log_out:
             model_file, *other = self.children
             assert not other, f"Should only have one file, but also found {other}"
@@ -40,12 +42,13 @@ class FileLoader(FileBox, BaseWidget):
     @trt.observe("children")
     def _update_model(self, change: trt.Bunch):
         with self.log_out:
-            if isinstance(change.old, (list, tuple)) and change.old:
-                old, *_ = change.old
-                if isinstance(old, File):
-                    old.unobserve(self._load_model)
+            if isinstance(change.old, (list, tuple)):
+                for old in change.old:
+                    if isinstance(old, File):
+                        old.unobserve_all()
             if isinstance(change.new, (list, tuple)) and change.new:
-                new, *_ = change.new
+                new, *other = change.new
+                assert not other, f"Should only have one file, but also found {other}"
                 new.observe(self._load_model, "value")
 
 
