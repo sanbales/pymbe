@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Collection, Dict, List, Tuple, Union
+from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
 
@@ -115,7 +115,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
     ) -> "Model":
         """Make a Model from an iterable container of elements"""
         return Model(
-            elements={element["@id"]: element for element in elements},
+            elements={element["@id"]: element for element in elements if "@id" in element},
             **kwargs,
         )
 
@@ -140,7 +140,9 @@ class Model:  # pylint: disable=too-many-instance-attributes
             element for element in self.elements.values() if element._metatype == "Package"
         )
 
-    def get_element(self, element_id: str, fail: bool = True, resolve: bool = True) -> "Element":
+    def get_element(
+        self, element_id: str, fail: bool = True, resolve: bool = True
+    ) -> Optional["Element"]:
         """Get an element, or retrieve it from the API if it is there"""
         element = self.elements.get(element_id)
         if element and not isinstance(element, Element):
@@ -195,7 +197,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
             warn(f"Overwriting {filepath}")
         filepath.write_text(
             json.dumps(
-                [element._data for element in self.elements.values()],
+                [element._data for element in self.elements.values() if element._data],
                 indent=indent,
             ),
         )
@@ -208,7 +210,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
         for element in elements:
             label = get_label(element=element)
             if label:
-                element._derived["label"] = label
+                element._label = label
 
     def _add_owned(self):
         """Adds owned elements, relationships, and metatypes to the model"""
@@ -266,6 +268,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
     _model: Model
 
     _id: str = field(default_factory=lambda: str(uuid4()))
+    _label: str = None
     _metatype: str = "Element"
     _derived: Dict[str, List] = field(default_factory=lambda: defaultdict(list))
     # TODO: replace this with instances sequences
@@ -349,12 +352,18 @@ class Element:  # pylint: disable=too-many-instance-attributes
         if isinstance(item, (dict, str)):
             item = self.__safe_dereference(item)
         elif isinstance(item, (list, tuple, set)):
-            items = [self.__safe_dereference(subitem) for subitem in item]
+            items = [self.__safe_dereference(sub_item) for sub_item in item]
             return type(item)(items)
         return item
 
     def __hash__(self):
-        return hash(self._data["@id"])
+        id_ = self._id
+        if id_ is None:
+            warn(
+                f"Element (oid={id(self)}, data={self._data}) has no '@id'! Generating one for it"
+            )
+            id_ = self._data["@id"] = str(uuid4())
+        return hash(id_)
 
     def __lt__(self, other):
         if isinstance(other, str):
@@ -370,7 +379,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
 
     @property
     def label(self) -> str:
-        return self._derived.get("label")
+        return self._label
 
     @property
     def relationships(self) -> Dict[str, Any]:

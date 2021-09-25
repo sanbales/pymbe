@@ -6,7 +6,7 @@
 import logging
 import traceback
 from random import randint, sample
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import networkx as nx
 
@@ -49,8 +49,8 @@ TYPES_FOR_ROLL_UP_MULTIPLICITY = (
 TYPES_FOR_CONNECTOR_INSTANCES = ("ConnectionUsage", "InterfaceUsage", "SuccessionUsage")
 
 
-def random_generator_playbook(
-    lpg: SysML2LabeledPropertyGraph,
+def random_generator_playbook(  # pylint: disable=invalid-name
+    m1: Union[Model, SysML2LabeledPropertyGraph],
     name_hints: Dict[str, str] = None,
     filtered_feat_packages: List[Element] = None,
     phase_limit: int = 10,
@@ -59,14 +59,25 @@ def random_generator_playbook(
     Main routine to execute a playbook to randomly generate sequences as an interpretation
     of a SysML v2 model
 
-    :param lpg: Labeled propery graph of the M1 model
+    :param lpg: Labeled property graph of the M1 model
     :param name_hints: A dictionary to make labeling instances more clean
     :param filtered_feat_packages: A list of packages by which to down filter feature and
         expression sequence templates
+    :param phase_limit: Stop process before running the specified phase
     :return: A dictionary of sequences keyed by the id of a given M1 type
     """
+    if isinstance(m1, Model):
+        model = m1
+        lpg = SysML2LabeledPropertyGraph(model=model)
+    elif isinstance(m1, SysML2LabeledPropertyGraph):
+        lpg = m1
+        model = m1.model
+    else:
+        raise TypeError(
+            f"`m1` must either be a pymbe `Model` or `SysML2LabeledPropertyGraph` not a {type(m1)}"
+        )
 
-    all_elements = lpg.model.elements
+    all_elements = model.elements
     name_hints = name_hints or {}
     filtered_feat_packages = filtered_feat_packages or []
 
@@ -117,6 +128,9 @@ def random_generator_playbook(
     # PHASE 4: Expand sequences to support computations
     # Move through existing sequences and then start to pave further with new steps
     random_generator_playbook_phase_4(lpg.model, expression_sequences, instances_dict)
+
+    if phase_limit < 5:
+        return instances_dict
 
     # PHASE 5: Interpret connection usages and map ConnectionEnds at M0
 
@@ -188,7 +202,7 @@ def random_generator_playbook_phase_1_singletons(
     Calculates instances for classifiers that aren't directly typed (but may have
     members or be superclasses for model elements that have sequences generated for them).
 
-    :param lpg: Active SysML graph
+    :param model: A SysML v2 model
     :param scg: Subclassing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
@@ -215,7 +229,6 @@ def random_generator_playbook_phase_2_rollup(
     Build up set of sequences for classifiers by taking the union of sequences
     already generated for the classifier subclasses.
 
-    :param lpg: Active SysML graph
     :param scg: Subclassing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
@@ -242,7 +255,7 @@ def random_generator_playbook_phase_2_unconnected(
     """
     Final pass to generate sequences for classifiers that haven't been given sequences yet.
 
-    :param all_elements: Full dictionary of elements in the working memory
+    :param model: A SysML v2 Model
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
     """
@@ -271,10 +284,8 @@ def random_generator_playbook_phase_3(
     classifier sequences with randomly selected instances of classifiers that type
     nested features.
 
+    :param model: The SysML v2 Model
     :param feature_sequences: Sequences that represent the nesting structure of the features
-    :param all_elements: Full dictionary of elements in the working memory
-    :param lpg: Active SysML graph
-    :param ptg: Part Typing Graph projection from the LPG
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: (Temporarily return a trace of actions) None - side effect is addition of new
         instances to the instances dictionary
@@ -444,7 +455,7 @@ def random_generator_playbook_phase_3_new_instances(
                 typ_id = feature_id
 
             lower_mult = feature_multiplicity(feature, "lower")
-            upper_mult = min(feature_multiplicity(feature, "upper"), model.MAX_MULTIPLICITY)
+            upper_mult = min(feature_multiplicity(feature, "upper"), model.max_multiplicity)
 
             new_sequences = extend_sequences_with_new_instance(
                 new_sequences,
@@ -507,9 +518,9 @@ def random_generator_playbook_phase_4(
     """
     Generate interpreting sequences for Expressions in the model
 
+    :param model: The SysML v2 Model
     :param expr_sequences: Sequences that represent the membership structure for expressions
         in the model and the features to which expressions provide values
-    :param lpg: Active SysML graph
     :param instances_dict: Working dictionary of interpreted sequences for the model
     :return: None - side effect is addition of new instances to the instances dictionary
     """
@@ -611,11 +622,15 @@ def random_generator_playbook_phase_5(
 
         try:
             source_sequences = instances_dict[source.chainingFeature[-1]._id]
+        except IndexError as exc:
+            raise IndexError(f"{source} has no chainingFeatures!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {source}!") from exc
 
         try:
             target_sequences = instances_dict[target.chainingFeature[-1]._id]
+        except IndexError as exc:
+            raise IndexError(f"{target} has no chainingFeatures!") from exc
         except KeyError as exc:
             raise KeyError(f"Cannot find chaining feature sequences for {target}!") from exc
 
@@ -643,20 +658,21 @@ def random_generator_playbook_phase_5(
                 f" {min_side} and {max_side}."
             ) from exc
 
-        connector_ends_sequences = (source_sequences, target_sequences)
+        connected_feature_sequences = (source_sequences, target_sequences)
         connector_sequences = instances_dict[connector_id]
-        for connector_end, connector_end_indeces, connector_end_sequences in zip(
-            connector_ends, connector_ends_indeces, connector_ends_sequences
+        for connector_end, connector_end_indeces, connected_feature_sequence in zip(
+            connector_ends, connector_ends_indeces, connected_feature_sequences
         ):
             instances_dict[connector_end._id] = [
-                [
-                    sequence
-                    + connector_end_sequences[
-                        connector_end_indeces[idx % len(connector_end_sequences)]
-                    ][1:]
-                ]
-                for idx, sequence in enumerate(connector_sequences)
+                connector_sequences[idx]
+                + connected_feature_sequence[connector_end_indeces[idx]][1:]
+                for idx in range(min(len(connector_sequences), max_side))
             ]
+            for idx in range(len(connector_sequences) - max_side):
+                connector_sequence = connector_sequences[idx + max_side]
+                instances_dict[connector_end._id] += [
+                    connector_sequence + sample(connected_feature_sequence, 1)[0][1:]
+                ]
 
 
 def build_sequence_templates(lpg: SysML2LabeledPropertyGraph) -> List[List[str]]:
@@ -727,7 +743,6 @@ def build_expression_sequence_templates(lpg: SysML2LabeledPropertyGraph) -> List
 
     :return: list of lists of Element IDs (as strings) representing feature nesting.
     """
-
     evg = lpg.get_projection("Expression Value")
 
     sorted_feature_groups = []

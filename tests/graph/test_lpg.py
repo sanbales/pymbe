@@ -1,10 +1,8 @@
 import warnings
 
-import networkx as nx
 import pytest
 
 from pymbe.graph import SysML2LabeledPropertyGraph
-from tests.conftest import kerbal_model
 
 SEED_NODE_NAMES = ("FL-T100 Fuel Tank", """RT-5 "Flea" Solid Fuel Booster""")
 

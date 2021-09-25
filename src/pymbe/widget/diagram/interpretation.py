@@ -112,7 +112,7 @@ class M0Viewer(ipyw.Box, BaseWidget):
     def _generate_random_interpretation(self, *_):
         with self.log_out:
             self.interpretation = random_generator_playbook(
-                lpg=self.lpg,
+                m1=self.lpg,
                 filtered_feat_packages=self.package_selector.value,
             )
 

@@ -41,7 +41,7 @@ def test_type_to_feature1(kerbal_lpg, kerbal_stable_names):
 def test_type_to_feature2(simple_parts_client, simple_parts_lpg, simple_parts_stable_names):
     *_, qualified_name_to_id = simple_parts_stable_names
 
-    port_type_id = qualified_name_to_id[f"Model::Ports::Port <<PortDefinition>>"]
+    port_type_id = qualified_name_to_id["Model::Ports::Port <<PortDefinition>>"]
     power_in_id = qualified_name_to_id[
         f"{SIMPLE_MODEL}Power Group: Part::Power User: Part::Power In: Port <<PortUsage>>"
     ]

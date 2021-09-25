@@ -44,4 +44,4 @@ def test_graph_projection_part_def_edges(kerbal_lpg):
     # check that nothing but Superclassing edges are allowed by the filter
     pdg = kerbal_lpg.get_projection("Part Definition")
 
-    assert all([edge[2] == "Superclassing^-1" for edge in pdg.edges])
+    assert all(edge[2] == "Superclassing^-1" for edge in pdg.edges)

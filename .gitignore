@@ -89,6 +89,8 @@ ipython_config.py
 # OpenMDAO
 cases.sql
 n2.html
+connections.html
+openmdao_checks.out
 
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
@@ -156,3 +158,4 @@ envs/
 api/
 db/
 downloads/
+raw.json
