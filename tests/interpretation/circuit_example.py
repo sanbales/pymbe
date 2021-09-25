@@ -5,7 +5,6 @@ from pathlib import Path
 from warnings import warn
 
 import ipywidgets as ipyw
-import matplotlib as plt
 import matplotlib.pyplot as plt
 import networkx as nx
 import openmdao.api as om
@@ -335,7 +334,7 @@ def make_circuit_interpretations(
                 print_exceptions=print_exceptions,
             )
             interpretations += [interpretation_data]
-        except:  # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except  # noqa: E722
             if print_exceptions:
                 print(
                     f">>> Failed to generate interpretation try {num_tries}!\n",
@@ -447,7 +446,7 @@ class CircuitComponent(om.Group):
                         print(
                             f" >  Connecting voltages for node {node_name}.V --> {elec_volt_pins}"
                         )
-                except:  # pylint: disable=bare-except
+                except:  # pylint: disable=bare-except  # noqa: E722
                     if print_exceptions:
                         print(f"  ! Could not connect: {node_name}.V --> {elec_volt_pins}")
 
@@ -507,7 +506,8 @@ class CircuitPlotter(ipyw.VBox):
 
     graph: nx.DiGraph = trt.Instance(nx.DiGraph, args=())
     edge_curvature: ipyw.FloatSlider = trt.Instance(
-        ipyw.FloatSlider, kw=dict(description="Edge Curvature", value=0.25, min=0, max=0.5, step=0.05)
+        ipyw.FloatSlider,
+        kw=dict(description="Edge Curvature", value=0.25, min=0, max=0.5, step=0.05),
     )
     line_width: ipyw.FloatSlider = trt.Instance(
         ipyw.FloatSlider, kw=dict(description="Line Width", value=2, min=1, max=3, step=0.2)
