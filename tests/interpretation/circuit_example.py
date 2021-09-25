@@ -255,7 +255,7 @@ def draw_circuit(
         loop_edge_list |= new_edges
         encountered_edges |= new_edges
 
-    plt.figure(figsize=figsize)
+    _ = plt.figure(figsize=figsize)
     for node_name_designator, color in NODE_COLORS.items():
         poses = {
             node: loc for node, loc in node_pos.items() if node[0].startswith(node_name_designator)
@@ -274,7 +274,7 @@ def draw_circuit(
     arrowstyles = ["-|>"] * num_flow_paths + ["->"]
 
     for edgelist, style, edge_color, arrowstyle in zip(
-        [*loop_edge_list] + [[*internal_edges]], styles, edge_colors, arrowstyles
+        [[*loop_edge_list]] + [list(internal_edges)], styles, edge_colors, arrowstyles
     ):
         nx.draw_networkx_edges(
             circuit_graph,
@@ -293,7 +293,7 @@ def draw_circuit(
     }
     label_options = {"boxstyle": "circle", "ec": "white", "fc": "white", "alpha": 0.0}
 
-    nx.draw_networkx_labels(
+    _ = nx.draw_networkx_labels(
         circuit_graph,
         node_pos,
         labels,
@@ -419,7 +419,7 @@ class CircuitComponent(om.Group):
             n_out = sum(1 for node in comp if node[1] == "Neg")
 
             kwargs = dict(promotes_inputs=[("I_in:0", "I_in")]) if has_pos_emf else {}
-            node = self.add_subsystem(
+            self.add_subsystem(
                 node_name,
                 self.OM_COMPONENTS["N"](n_in=n_in, n_out=n_out),
                 **kwargs,
@@ -507,10 +507,10 @@ class CircuitPlotter(ipyw.VBox):
 
     graph: nx.DiGraph = trt.Instance(nx.DiGraph, args=())
     edge_curvature: ipyw.FloatSlider = trt.Instance(
-        ipyw.FloatSlider, kw=dict(description="Edge Curvature", min=0, max=0.5, step=0.05)
+        ipyw.FloatSlider, kw=dict(description="Edge Curvature", value=0.25, min=0, max=0.5, step=0.05)
     )
     line_width: ipyw.FloatSlider = trt.Instance(
-        ipyw.FloatSlider, kw=dict(description="Line Width", min=1, max=3, step=0.2)
+        ipyw.FloatSlider, kw=dict(description="Line Width", value=2, min=1, max=3, step=0.2)
     )
     graph_layout: ipyw.Dropdown = trt.Instance(
         ipyw.Dropdown, kw=dict(options=NX_LAYOUTS, label="kamada_kawai")

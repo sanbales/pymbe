@@ -6,7 +6,7 @@
 import logging
 import traceback
 from random import randint, sample
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import networkx as nx
 
@@ -49,8 +49,8 @@ TYPES_FOR_ROLL_UP_MULTIPLICITY = (
 TYPES_FOR_CONNECTOR_INSTANCES = ("ConnectionUsage", "InterfaceUsage", "SuccessionUsage")
 
 
-def random_generator_playbook(
-    lpg: SysML2LabeledPropertyGraph,
+def random_generator_playbook(  # pylint: disable=invalid-name
+    m1: Union[Model, SysML2LabeledPropertyGraph],
     name_hints: Dict[str, str] = None,
     filtered_feat_packages: List[Element] = None,
     phase_limit: int = 10,
@@ -66,8 +66,18 @@ def random_generator_playbook(
     :param phase_limit: Stop process before running the specified phase
     :return: A dictionary of sequences keyed by the id of a given M1 type
     """
+    if isinstance(m1, Model):
+        model = m1
+        lpg = SysML2LabeledPropertyGraph(model=model)
+    elif isinstance(m1, SysML2LabeledPropertyGraph):
+        lpg = m1
+        model = m1.model
+    else:
+        raise TypeError(
+            f"`m1` must either be a pymbe `Model` or `SysML2LabeledPropertyGraph` not a {type(m1)}"
+        )
 
-    all_elements = lpg.model.elements
+    all_elements = model.elements
     name_hints = name_hints or {}
     filtered_feat_packages = filtered_feat_packages or []
 
@@ -445,7 +455,7 @@ def random_generator_playbook_phase_3_new_instances(
                 typ_id = feature_id
 
             lower_mult = feature_multiplicity(feature, "lower")
-            upper_mult = min(feature_multiplicity(feature, "upper"), model.MAX_MULTIPLICITY)
+            upper_mult = min(feature_multiplicity(feature, "upper"), model.max_multiplicity)
 
             new_sequences = extend_sequences_with_new_instance(
                 new_sequences,
