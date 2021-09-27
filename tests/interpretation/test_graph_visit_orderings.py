@@ -37,11 +37,11 @@ def test_feature_sequence_templates1(kerbal_lpg, kerbal_stable_names):
 
     assert [liquid_stage_id, engines_id] in seq_templates
 
-    assert any([krp_mass_id in seq for seq in seq_templates])
+    assert any(krp_mass_id in seq for seq in seq_templates)
 
-    assert any([(engines_id in seq) and (liquid_stage_id in seq) for seq in seq_templates])
+    assert any((engines_id in seq) and (liquid_stage_id in seq) for seq in seq_templates)
 
-    assert any([(tanks_id in seq) and (liquid_stage_id in seq) for seq in seq_templates])
+    assert any((tanks_id in seq) and (liquid_stage_id in seq) for seq in seq_templates)
 
 
 def test_feature_sequence_templates2(kerbal_lpg, kerbal_stable_names):

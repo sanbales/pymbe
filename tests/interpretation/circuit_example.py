@@ -10,6 +10,7 @@ import networkx as nx
 import openmdao.api as om
 import traitlets as trt
 from IPython.display import HTML, IFrame, display
+from ipywidgets.widgets.trait_types import TypedTuple
 from wxyz.lab import DockBox, DockPop
 
 import pymbe.api as pm
@@ -395,22 +396,37 @@ class CircuitComponent(om.Group):
                 kwargs["promotes_inputs"] = [("V_out", "Vg")]
             self.add_subsystem(f"{element}", comp_cls(**params), **kwargs)
 
+        self._add_nodes(digraph=digraph, emf_pins=data["emf_pins"])
+
+        self.nonlinear_solver = om.NewtonSolver()
+        self.linear_solver = om.DirectSolver()
+
+        self.nonlinear_solver.options["iprint"] = 2 if print_exceptions else 0
+        self.nonlinear_solver.options["maxiter"] = 10
+        self.nonlinear_solver.options["solve_subsystems"] = True
+        self.nonlinear_solver.linesearch = om.ArmijoGoldsteinLS()
+        self.nonlinear_solver.linesearch.options["maxiter"] = 10
+        self.nonlinear_solver.linesearch.options["iprint"] = 2
+
+        return True
+
+    def _add_nodes(self, digraph: nx.DiGraph, emf_pins: dict, print_exceptions: bool = False):
         connectors = nx.DiGraph()
         connectors.add_edges_from([(src, tgt) for src, tgt in digraph.edges if src[0] != tgt[0]])
         self.node_names = node_names = []
         for node_id, comp in enumerate(nx.connected_components(connectors.to_undirected())):
             node_name = f"node_{node_id}"
 
-            if data["emf_pins"]["-"] in comp:
+            if emf_pins["-"] in comp:
                 if print_exceptions:
                     print(
                         f"  > Not adding '{node_name}' because it is connected to"
-                        f" the ground ({data['emf_pins']['-']})"
+                        f" the ground ({emf_pins['-']})"
                     )
                 continue
             node_names += [node_name]
 
-            has_pos_emf = data["emf_pins"]["+"] in comp
+            has_pos_emf = emf_pins["+"] in comp
             if has_pos_emf:
                 self.source_node = node_name
 
@@ -449,18 +465,6 @@ class CircuitComponent(om.Group):
                 except:  # pylint: disable=bare-except  # noqa: E722
                     if print_exceptions:
                         print(f"  ! Could not connect: {node_name}.V --> {elec_volt_pins}")
-
-        self.nonlinear_solver = om.NewtonSolver()
-        self.linear_solver = om.DirectSolver()
-
-        self.nonlinear_solver.options["iprint"] = 2 if print_exceptions else 0
-        self.nonlinear_solver.options["maxiter"] = 10
-        self.nonlinear_solver.options["solve_subsystems"] = True
-        self.nonlinear_solver.linesearch = om.ArmijoGoldsteinLS()
-        self.nonlinear_solver.linesearch.options["maxiter"] = 10
-        self.nonlinear_solver.linesearch.options["iprint"] = 2
-
-        return True
 
 
 def execute_interpretation(interpretation_data: dict, print_exceptions=False):
@@ -625,6 +629,9 @@ class CircuitGenerator(ipyw.VBox):
             self.progress_bar,
         ]
         self.selector.observe(self._update_interpretation, "value")
+        for slider in (self.num_resistors, self.num_diodes):
+            slider.observe(self.update_multiplicities, "value")
+
         self._update_on_new_interpretations()
         self.make_new.on_click(self._make_new_interpretations)
 
@@ -648,6 +655,7 @@ class CircuitGenerator(ipyw.VBox):
         self.selected_interpretation = self.interpretations[self.selector.value - 1]
 
     def _make_new_interpretations(self, *_):
+        self.update_multiplicities()
         max_tries = self.max_tries.value
         progress_bar = self.progress_bar
         progress_bar.value, progress_bar.max = 0, max_tries
@@ -678,6 +686,223 @@ class CircuitGenerator(ipyw.VBox):
         )
 
 
+class ParametricExecutor(DockBox):
+    """
+        A controller for a model's parameters, runs it, and displays the results.
+
+    .. note::
+        Currently only looks at the options in a model.
+
+    """
+
+    description: str = trt.Unicode("Parametric Model").tag(sync=True)
+    float_sliders: ty.Tuple[ipyw.FloatSlider] = TypedTuple(trt.Instance(ipyw.FloatSlider))
+    result_labels: ty.Tuple[ipyw.Label] = TypedTuple(trt.Instance(ipyw.Label))
+
+    problem: om.Problem = trt.Instance(om.Problem, allow_none=True)
+    inputs: ipyw.VBox = trt.Instance(ipyw.VBox)
+    input_sliders: ipyw.VBox = trt.Instance(ipyw.VBox, args=())
+    results: ipyw.VBox = trt.Instance(ipyw.VBox)
+
+    run_problem: ipyw.Button = trt.Instance(ipyw.Button)
+
+    on_run_callbacks: ty.Tuple[ty.Callable] = TypedTuple(trt.Callable())
+
+    DEFAULT_DOCK_LAYOUT = {
+        "type": "split-area",
+        "orientation": "vertical",
+        "children": [
+            {"type": "tab-area", "widgets": [0], "currentIndex": 0},
+            {"type": "tab-area", "widgets": [1], "currentIndex": 0},
+        ],
+        "sizes": [0.5, 0.5],
+    }
+
+    def __init__(self, *args, **kwargs):
+        kwargs["dock_layout"] = kwargs.get("dock_layout", self.DEFAULT_DOCK_LAYOUT)
+        super().__init__(*args, **kwargs)
+
+    @trt.validate("children")
+    def _validate_children(self, proposal: trt.Bunch) -> tuple:
+        children = proposal.value
+        if children:
+            return children
+        return tuple(
+            [
+                self.inputs,
+                self.results,
+            ]
+        )
+
+    @trt.default("inputs")
+    def _make_inputs(self) -> ipyw.VBox:
+        box = ipyw.VBox(
+            children=(self.run_problem, self.input_sliders),
+            layout=dict(height="100%", width="100%"),
+        )
+        box.add_traits(description=trt.Unicode("Model Parameters").tag(sync=True))
+        return box
+
+    @trt.default("results")
+    def _make_results(self) -> ipyw.VBox:
+        box = ipyw.VBox(layout=dict(height="100%", width="100%"))
+        box.add_traits(description=trt.Unicode("Model Results").tag(sync=True))
+        return box
+
+    @trt.default("run_problem")
+    def _make_run_problem_button(self) -> ipyw.Button:
+        btn = ipyw.Button(
+            icon="play",
+            tooltip="Run OpenMDAO problem",
+            disabled=True,
+            layout=dict(width="40px"),
+        )
+        btn.on_click(self._run_problem)
+        return btn
+
+    def _run_problem(self, *_):
+        self.run_problem.disabled = True
+        self.results.children = []
+        self.update_parameter_values()
+        self.problem.run_model()
+        # TODO: update problem values
+        self.update_results(self.problem)
+
+    def update_parameter_values(self):
+        problem = self.problem
+        for slider in self.input_sliders.children:
+            name = slider.description
+            value = slider.value
+            try:
+                problem.set_val(name, value)
+            # If not an attribute, try to update the option of a system
+            except KeyError:
+                item = problem.model
+                *keys, attribute = name.split(".")
+                for key in keys:
+                    item = getattr(item, key)
+                item.options[attribute] = value
+
+    @trt.observe("problem")
+    def _on_new_problem(self, *_):
+        problem = self.problem
+        if not isinstance(problem, om.Problem):
+            self.run_problem.disabled = True
+            return
+        self.update_parameter_controllers(problem=problem)
+        self.update_results(problem=problem)
+        self.run_problem.disabled = False
+
+    @staticmethod
+    def get_kwargs(
+        name,
+        spec: dict,
+        num_steps: int = 20,
+        upper_mult: float = 2.0,
+        lower_mult: float = 0.5,
+    ) -> dict:
+        value = spec.get("val")
+        if spec.get("shape") == (1,):
+            value = value[0]
+        upper = spec.get("upper")
+        if upper is None:
+            if not value:
+                upper = 100  # TODO: figure out a better way to do this with other widgets
+            upper = value * upper_mult
+        lower = spec.get("lower")
+        if lower is None:
+            lower = value * lower_mult
+        return dict(
+            value=value,
+            max=upper,
+            min=lower,
+            step=(upper - lower) / num_steps,
+            description=name,
+            description_tooltip=spec.get("desc") or f"Set the value for '{name}'",
+        )
+
+    def update_parameter_controllers(self, problem: om.Problem):
+        # Get all the model systems' options that have a float as a value
+        system_parameters = {
+            system.pathname: {
+                key: spec
+                for key, spec in system.options._dict.items()
+                if isinstance(spec.get("val"), float)
+            }
+            for system in problem.model.system_iter()
+            if not system.name.startswith("_")
+        }
+        parameters = {
+            f"{system_name}.{param_name}": self.get_kwargs(
+                f"{system_name}.{param_name}", param_spec
+            )
+            for system_name, parameters in system_parameters.items()
+            for param_name, param_spec in parameters.items()
+        }
+        parameters.update(
+            {
+                spec["prom_name"]: self.get_kwargs(spec["prom_name"], spec)
+                for _, spec in problem.model.list_inputs(prom_name=True, out_stream=False)
+            }
+        )
+        parameters = dict(sorted(parameters.items()))
+
+        # if necessary, create new sliders
+        num_sliders = len(parameters)
+        slider_layout = dict(min_width="100px", width="98%")
+        additional_sliders_required = num_sliders - len(self.float_sliders)
+        if additional_sliders_required > 0:
+            new_sliders = tuple(
+                ipyw.FloatSlider(layout=slider_layout) for _ in range(additional_sliders_required)
+            )
+            for slider in new_sliders:
+                slider.observe(self._update_run_button, "value")
+            self.float_sliders += new_sliders
+
+        # configure sliders
+        sliders = self.float_sliders[:num_sliders]
+        for slider, (_, parameter_spec) in zip(sliders, sorted(parameters.items())):
+            slider.attribute = parameter_spec
+            with self.hold_trait_notifications():
+                # FIXME: figure out a better way to handle min/max/value checks
+                slider.value = 0.5 * (slider.max + slider.min)
+                slider.min = -9999999
+                slider.max = 9999999
+                for key, value in parameter_spec.items():
+                    setattr(slider, key, value)
+
+        self.input_sliders.children = sliders
+
+    def update_results(self, problem: om.Problem):
+        if not isinstance(problem, om.Problem):
+            return
+        outputs = {
+            spec["prom_name"]: dict(
+                value=spec["val"][0] if spec.get("shape") == (1,) else spec["val"],
+                units=spec.get("units"),
+                shape=spec.get("shape"),
+            )
+            for _, spec in problem.model.list_outputs(
+                prom_name=True, shape=True, units=True, out_stream=False
+            )
+        }
+        num_labels = len(outputs)
+        additional_labels_required = num_labels - len(self.result_labels)
+        if additional_labels_required > 0:
+            self.result_labels += tuple(ipyw.Label() for _ in range(additional_labels_required))
+        labels = self.result_labels[:num_labels]
+        for label, (name, value) in zip(labels, sorted(outputs.items())):
+            label.value = (
+                f"{name}: {value['value']:.5g}" + f" {value['units']}" if value["units"] else ""
+            )
+        self.results.children = labels
+
+    def _update_run_button(self, *_):
+        self.run_problem.disabled = False
+        for callback in self.on_run_callbacks:
+            callback(problem=self.problem)
+
+
 class CircuitUI(DockPop):
     """A user interface for interacting with the Circuit Builder example."""
 
@@ -685,10 +910,18 @@ class CircuitUI(DockPop):
         "type": "split-area",
         "orientation": "horizontal",
         "children": [
-            {"type": "tab-area", "widgets": [0], "currentIndex": 0},
+            {
+                "type": "split-area",
+                "orientation": "vertical",
+                "children": [
+                    {"type": "tab-area", "widgets": [0], "currentIndex": 0},
+                    {"type": "tab-area", "widgets": [4], "currentIndex": 0},
+                ],
+                "sizes": [0.28, 0.72],
+            },
             {"type": "tab-area", "widgets": [1, 3, 2], "currentIndex": 0},
         ],
-        "sizes": [0.20, 0.80],
+        "sizes": [0.2, 0.8],
     }
 
     panels: DockBox = trt.Instance(
@@ -702,10 +935,17 @@ class CircuitUI(DockPop):
     graph_plotter: CircuitPlotter = trt.Instance(CircuitPlotter, args=())
     connections: ipyw.Output = trt.Instance(ipyw.Output, kw=dict(layout=dict(width="100%")))
     n2: ipyw.Output = trt.Instance(ipyw.Output, kw=dict(layout=dict(width="100%")))
+    parametric_executor: ParametricExecutor = trt.Instance(
+        ParametricExecutor, kw=dict(layout=dict(height="auto", width="100%"))
+    )
 
     @trt.default("circuit_model")
     def _get_circuit_model(self) -> pm.Model:
         return self.instance_generator.circuit_model
+
+    @property
+    def panel_layout(self):
+        return self.panels.dock_layout
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -717,14 +957,17 @@ class CircuitUI(DockPop):
         panels = {
             "Generator": generator,
             "Graph": self.graph_plotter,
-            "Results": self.connections,
+            "Connections": self.connections,
             "N2": self.n2,
+            "Parametric Model": self.parametric_executor,
         }
         self.panels.children = tuple(panels.values())
         self.children = [self.panels]
 
         for name, widget in panels.items():
             widget.add_traits(description=trt.Unicode(default_value=name).tag(sync=True))
+
+        self.parametric_executor.on_run_callbacks += (self._update_connections,)
 
         trt.link((self, "circuit_model"), (generator, "circuit_model"))
         trt.link((self, "interpretation"), (generator, "selected_interpretation"))
@@ -734,6 +977,9 @@ class CircuitUI(DockPop):
         graph = self.interpretation.get("cleaned_graph")
         if isinstance(graph, nx.DiGraph):
             self.graph_plotter.graph = graph
+        problem = self.interpretation.get("problem")
+        if isinstance(problem, om.Problem):
+            self.parametric_executor.problem = problem
 
     def _update_n2(self, problem: om.Problem, filename="n2.html", width="100%", height=700):
         html_file = Path(filename).resolve().absolute()
