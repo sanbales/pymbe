@@ -1,21 +1,26 @@
-import traceback
 import typing as ty
-from importlib import import_module
 from pathlib import Path
 from warnings import warn
 
 import ipywidgets as ipyw
 import matplotlib.pyplot as plt
 import networkx as nx
-import openmdao.api as om
 import traitlets as trt
 from IPython.display import HTML, IFrame, display
 from ipywidgets.widgets.trait_types import TypedTuple
 from wxyz.lab import DockBox, DockPop
 
+import openmdao.api as om
 import pymbe.api as pm
-from pymbe.interpretation.interp_playbooks import random_generator_playbook
-from pymbe.model import Element
+
+from .generator import make_circuit_interpretations
+
+__all__ = (
+    "CircuitUI",
+    "draw_circuit",
+    "make_circuit_interpretations",
+    "update_multiplicities",
+)
 
 # The valid graph layouts available in networkx
 NX_LAYOUTS = sorted(
@@ -42,23 +47,6 @@ NODE_COLORS = {
     "D": "#A020F0",
     "EMF": "#DD8888",
 }
-
-
-def baseline_openmdao_example_circuit() -> dict:
-    edges = (
-        (("EMF", "Pos"), ("R1", "Neg")),
-        (("EMF", "Pos"), ("R2", "Neg")),
-        (("R1", "Pos"), ("EMF", "Neg")),
-        (("R2", "Pos"), ("D1", "Neg")),
-        (("D1", "Pos"), ("EMF", "Neg")),
-    )
-    baseline_digraph = nx.DiGraph()
-    baseline_digraph.add_edges_from(edges)
-    return dict(
-        cleaned_graph=baseline_digraph,
-        emf_pins={"+": ("EMF", "Pos"), "-": ("EMF", "Neg")},
-        params=dict(R1=dict(R=100), R2=dict(R=10000)),
-    )
 
 
 def update_multiplicities(
@@ -88,137 +76,6 @@ def update_multiplicities(
             member.multiplicity.upperBound._data["value"],
         ) = num_connectors
     return circuit
-
-
-def get_circuit_data(interpretation: dict, connector_feature: Element):
-    """
-    A very rudimentary filter for simple circuit connectors.
-
-    Filters out self-connections and duplicate connectors between the same m0 pins.
-    """
-    unique_connections = get_unique_connections(interpretation, connector_feature)
-    circuit_data = dict(interpretation=interpretation)
-
-    def get_el_name(element):
-        name = element.name
-        name, num = name.split("#")
-        name = name if name == "EMF" else name[0]
-        return name + num
-
-    def legal_predecessors(graph, node, valids):
-        all_pred = set(graph.predecessors(node))
-        return {pred for pred in all_pred if pred in valids}
-
-    def legal_successors(graph, node, valids):
-        all_suc = set(graph.successors(node))
-        return {pred for pred in all_suc if pred in valids}
-
-    graph = nx.DiGraph()
-    edges = [
-        ((get_el_name(source[-2]), "Pos"), (get_el_name(target[-2]), "Neg"))
-        for source, target in unique_connections
-    ]
-    nodes = {node for node, _ in sum(map(list, edges), [])}
-    edges += [((node, "Neg"), (node, "Pos")) for node in nodes if not node.startswith("EMF")]
-    graph.add_edges_from(edges)
-
-    emf_nodes = {node for node in nodes if node.upper().startswith("EMF")}
-    if not emf_nodes:
-        raise RuntimeError("There are not EMF nodes in the graph!")
-
-    if len(emf_nodes) > 1:
-        raise RuntimeError(
-            f"Found {len(emf_nodes)} EMF nodes ({emf_nodes})!  There should only be one!"
-        )
-    emf_node = emf_nodes.pop()
-    emf_pos_name = (emf_node, "Pos")
-    emf_neg_name = (emf_node, "Neg")
-
-    # find all paths in the graph from EMF positive side to EMF negative side
-
-    flows = list(nx.all_simple_paths(graph, emf_pos_name, emf_neg_name))
-    flow_edges = list(nx.all_simple_edge_paths(graph, emf_pos_name, emf_neg_name))
-
-    flowed_nodes = {node for flow in flows for node in flow}
-
-    circuit_data["valid_edges"] = set(sum(flow_edges, []))
-
-    valid_graph = nx.DiGraph()
-    valid_graph.add_edges_from(circuit_data["valid_edges"])
-
-    # look at junctions in the graph
-
-    # split junctions - where a positive pin has multiple outputs
-    circuit_data["split_junctions"] = {
-        node: legal_successors(valid_graph, node, flowed_nodes)
-        for node in graph.nodes
-        if len(legal_successors(valid_graph, node, flowed_nodes)) > 1
-    }
-
-    # join junctions - where a negative pin has multiple inputs
-    circuit_data["join_junctions"] = {
-        node: legal_predecessors(valid_graph, node, flowed_nodes)
-        for node in graph.nodes
-        if len(legal_predecessors(valid_graph, node, flowed_nodes)) > 1
-    }
-
-    circuit_data["both_ways_junctions"] = {
-        node
-        for node in graph.nodes
-        if len(legal_successors(valid_graph, node, flowed_nodes)) > 1
-        if node in sum(map(list, circuit_data["join_junctions"].values()), [])
-    }
-
-    circuit_data["number_loops"] = len(flows)
-    circuit_data["valid_nodes"] = flowed_nodes
-
-    circuit_data["loop_edges"] = flow_edges
-
-    circuit_data["cleaned_graph"] = valid_graph
-    circuit_data["plain_graph"] = graph
-
-    # EMF positive is always in loop #1
-    circuit_data["emf_pins"] = {"+": emf_pos_name, "-": emf_neg_name}
-
-    # compute the independent loops on the graph
-    circuit_data["loop_unique_edges"] = []
-    if circuit_data["number_loops"] > 1:
-        encountered_edges = set()
-        for indx in range(circuit_data["number_loops"]):
-            new_edges = []
-            for edg in flow_edges[indx]:
-                if edg not in encountered_edges:
-                    new_edges.append(edg)
-                    encountered_edges.add(edg)
-            circuit_data["loop_unique_edges"].append(new_edges)
-    else:
-        circuit_data["loop_unique_edges"] = list(flow_edges)
-
-    return circuit_data
-
-
-def load_class(class_path: str) -> type:
-    *module_path, class_name = class_path.split(".")
-    module = import_module(".".join(module_path))
-    return getattr(module, class_name)
-
-
-def get_unique_connections(instances, feature):
-    source_feat, target_feat = feature
-    m0_connector_ends = [
-        (tuple(source), tuple(target))
-        for source, target in zip(instances[source_feat._id], instances[target_feat._id])
-    ]
-
-    m0_connector_ends = tuple(
-        {(source, target) for source, target in m0_connector_ends if source[:-1] != target[:-1]}
-    )
-
-    unique_connections = {
-        (source[-2:], target[-2:]): (source, target) for source, target in m0_connector_ends
-    }
-    return tuple((source, target) for source, target in unique_connections.values())
-    # return tuple((source, target) for source, target in m0_connector_ends)
 
 
 def draw_circuit(
@@ -303,206 +160,6 @@ def draw_circuit(
         bbox=label_options,
     )
     plt.show()
-
-
-def make_circuit_interpretations(
-    m1_model: pm.Model,
-    required_interpretations: int = 1,
-    max_tries: int = 20,
-    print_exceptions: bool = True,
-    on_attempt: ty.Callable = None,
-) -> tuple:
-    """Returns a tuple of data on valid randomly generated M0 interpretations."""
-    num_tries = 0
-    interpretations = []
-    circuit_pkg = m1_model.ownedElement["Circuit Builder"]
-    connector_feature = circuit_pkg.ownedElement["Circuit"].ownedMember["Part to Part"].endFeature
-    while len(interpretations) < required_interpretations and num_tries < max_tries:
-        num_tries += 1
-        if on_attempt is not None:
-            on_attempt()
-        try:
-            interpretation = random_generator_playbook(
-                m1=m1_model,
-                filtered_feat_packages=[circuit_pkg],
-            )
-            interpretation_data = get_circuit_data(interpretation, connector_feature)
-            graph: nx.DiGraph = interpretation_data["cleaned_graph"]
-            assert len(graph.nodes) > 0, "Graph has no nodes!"
-            assert len(graph.edges) > 0, "Graph has no edges!"
-            interpretation_data["problem"] = execute_interpretation(
-                interpretation_data=interpretation_data,
-                print_exceptions=print_exceptions,
-            )
-            interpretations += [interpretation_data]
-        except:  # pylint: disable=bare-except  # noqa: E722
-            if print_exceptions:
-                print(
-                    f">>> Failed to generate interpretation try {num_tries}!\n",
-                    f"\n\tTRACEBACK:\n\t{traceback.format_exc()}",
-                )
-    return tuple(interpretations)
-
-
-class CircuitComponent(om.Group):
-    """An OpenMDAO Circuit for circuits of Diodes and Resistors."""
-
-    # FIXME: this should be retrieved from the SysML model
-    OM_COMPONENTS = {
-        class_path.rsplit(".", 1)[-1][0]: load_class(class_path)
-        for class_path in (
-            "openmdao.test_suite.test_examples.test_circuit_analysis.Diode",
-            "openmdao.test_suite.test_examples.test_circuit_analysis.Resistor",
-            "openmdao.test_suite.test_examples.test_circuit_analysis.Node",
-        )
-    }
-
-    def initialize(self):
-        self.options.declare("interpretation_data", types=dict)
-        self.options.declare("print_exceptions", False, types=bool)
-        self.options.declare("run_baseline", False, types=bool)
-        self.options.declare("electric_params", {}, types=dict)
-
-    def setup(self):
-        print_exceptions = self.options["print_exceptions"]
-
-        if self.options["run_baseline"]:
-            data = baseline_openmdao_example_circuit()
-            electric_params = data["electric_params"]
-        else:
-            data = self.options["interpretation_data"]
-            electric_params = self.options["electric_params"]
-
-        digraph: nx.DiGraph = data["cleaned_graph"]
-
-        # V, *_ = next(digraph.successors(data["emf_pins"]["+"]))
-        grounded = [el for el, *_ in digraph.predecessors(data["emf_pins"]["-"])]
-
-        elements = {
-            element for element, polarity in digraph.nodes if not element.upper().startswith("EMF")
-        }
-        for element in elements:
-            comp_cls = self.OM_COMPONENTS.get(element[0])
-            if comp_cls is None:
-                if print_exceptions:
-                    print(f"{element} doesn't have class!")
-                continue
-            kwargs = {}
-            params = electric_params.get(element, {})
-            if params:
-                if print_exceptions:
-                    print(f"Setting params={params} for {element}")
-            if element in grounded:
-                kwargs["promotes_inputs"] = [("V_out", "Vg")]
-            self.add_subsystem(f"{element}", comp_cls(**params), **kwargs)
-
-        self._add_nodes(digraph=digraph, emf_pins=data["emf_pins"])
-
-        self.nonlinear_solver = om.NewtonSolver()
-        self.linear_solver = om.DirectSolver()
-
-        self.nonlinear_solver.options["iprint"] = 2 if print_exceptions else 0
-        self.nonlinear_solver.options["maxiter"] = 10
-        self.nonlinear_solver.options["solve_subsystems"] = True
-        self.nonlinear_solver.linesearch = om.ArmijoGoldsteinLS()
-        self.nonlinear_solver.linesearch.options["maxiter"] = 10
-        self.nonlinear_solver.linesearch.options["iprint"] = 2
-
-        return True
-
-    def _add_nodes(self, digraph: nx.DiGraph, emf_pins: dict, print_exceptions: bool = False):
-        connectors = nx.DiGraph()
-        connectors.add_edges_from([(src, tgt) for src, tgt in digraph.edges if src[0] != tgt[0]])
-        self.node_names = node_names = []
-        for node_id, comp in enumerate(nx.connected_components(connectors.to_undirected())):
-            node_name = f"node_{node_id}"
-
-            if emf_pins["-"] in comp:
-                if print_exceptions:
-                    print(
-                        f"  > Not adding '{node_name}' because it is connected to"
-                        f" the ground ({emf_pins['-']})"
-                    )
-                continue
-            node_names += [node_name]
-
-            has_pos_emf = emf_pins["+"] in comp
-            if has_pos_emf:
-                self.source_node = node_name
-
-            n_in = sum(1 for node in comp if node[1] == "Pos")
-            n_out = sum(1 for node in comp if node[1] == "Neg")
-
-            kwargs = dict(promotes_inputs=[("I_in:0", "I_in")]) if has_pos_emf else {}
-            self.add_subsystem(
-                node_name,
-                self.OM_COMPONENTS["N"](n_in=n_in, n_out=n_out),
-                **kwargs,
-            )
-            if print_exceptions:
-                print(f"  > Adding '{node_name}' with {n_in} inputs and {n_out} outputs")
-            indeces = {"in": 1 * has_pos_emf, "out": 0}
-            elec_volt_pins = []
-            for element, polarity in comp:
-                if element.startswith("EMF"):
-                    continue
-                elem_dir = "out" if polarity == "Pos" else "in"
-                node_dir = "out" if elem_dir == "in" else "in"
-                elec_volt_pins += [f"{element}.V_{elem_dir}"]
-
-                node_current = f"{node_name}.I_{node_dir}:{indeces[node_dir]}"
-                self.connect(f"{element}.I", node_current)
-                if print_exceptions:
-                    print(f"  > Connecting currents: {element}.I --> {node_current}")
-                indeces[node_dir] += 1
-            if elec_volt_pins:
-                try:
-                    self.connect(f"{node_name}.V", elec_volt_pins)
-                    if print_exceptions:
-                        print(
-                            f" >  Connecting voltages for node {node_name}.V --> {elec_volt_pins}"
-                        )
-                except:  # pylint: disable=bare-except  # noqa: E722
-                    if print_exceptions:
-                        print(f"  ! Could not connect: {node_name}.V --> {elec_volt_pins}")
-
-
-def execute_interpretation(interpretation_data: dict, print_exceptions=False):
-    try:
-        problem = interpretation_data.get("problem")
-        if problem is None:
-            circuit_name = "circuit"
-            problem = om.Problem()
-            problem.model.add_subsystem(
-                circuit_name,
-                CircuitComponent(
-                    interpretation_data=interpretation_data, print_exceptions=print_exceptions
-                ),
-            )
-            is_valid = problem.setup()
-            if not is_valid:
-                raise ValueError("  ! Interpretation does not produce a valid circuit!")
-            if print_exceptions:
-                print(" >> Successfully set up interpretation")
-        try:
-            circuit = getattr(problem.model, circuit_name)
-            problem.set_val(f"{circuit_name}.I_in", 0.1)
-            problem.set_val(f"{circuit_name}.Vg", 0)
-            for node_name in circuit.node_names:
-                problem.set_val(
-                    f"{circuit_name}.{node_name}.V",
-                    (10.0 if node_name == circuit.source_node else 0.1),
-                )
-            problem.run_model()
-            if print_exceptions:
-                print("  + Successfully ran interpretation!\n")
-        except Exception:  # pylint: disable=broad-except
-            if print_exceptions:
-                print(f"  ! Failed to run interpretation!\n\n{traceback.format_exc()}\n")
-    except Exception:  # pylint: disable=broad-except
-        if print_exceptions:
-            print(f"  ! Failed to setup interpretation!\n\n{traceback.format_exc()}\n")
-    return problem
 
 
 class CircuitPlotter(ipyw.VBox):

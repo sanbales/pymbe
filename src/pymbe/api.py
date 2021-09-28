@@ -1,3 +1,4 @@
+from .interpretation.interp_playbooks import random_generator_playbook
 from .model import Instance, Model
 from .widget.client import APIClientWidget
 from .widget.containment import ContainmentTree
@@ -14,4 +15,5 @@ __all__ = (
     "Model",
     "APIClientWidget",
     "UI",
+    "random_generator_playbook",
 )
