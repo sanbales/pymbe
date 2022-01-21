@@ -31,7 +31,7 @@ commands:
       flake8 src/
       pylint src/ --rcfile=.pylintrc
     windows: |
-      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ & pylint src/ --rcfile=.pylintrc
+      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ tests/ & pylint src/ tests/ --rcfile=.pylintrc
   package:
     description: make a source distribution
     env_spec: developer
