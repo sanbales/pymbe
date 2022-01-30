@@ -122,13 +122,27 @@ Expression Inferred:
     - ReturnParameterMembership
     - Redefinition
 
+Generalization:
+  description: |
+    Generate a graph that covers all generalization relationships between features
+  implied_edge_types:
+    - ImpliedFeatureTyping
+  included_edge_types:
+    - FeatureTyping
+    - ImpliedFeatureTyping
+    - Subclassification
+  reversed_edge_types:
+    - FeatureTyping
+    - ImpliedFeatureTyping
+    - Subclassification
+
 Part Definition:
   description: |
     Generate library settings for a graph that just looks at superclassing and part definitions
   included_edge_types:
-    - Superclassing
+    - Subclassification
   reversed_edge_types:
-    - Superclassing
+    - Subclassification
 
 Part Featuring:
   description: >
@@ -207,5 +221,8 @@ Redefinition and Subsetting:
   description: |
     Generate a graph that covers redefinition relationships between features
   included_edge_types:
+    - Redefinition
+    - Subsetting
+  reversed_edge_types:
     - Redefinition
     - Subsetting

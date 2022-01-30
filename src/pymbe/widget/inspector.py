@@ -11,18 +11,18 @@ from .core import BaseWidget
 class ElementInspector(ipyw.Output, BaseWidget):
     """A widget to inspect a SysML v2 Element"""
 
-    FILTER_KEYS = ("@context",)
+    description: str = trt.Unicode("Inspector").tag(sync=True)
+    icon_class: str = trt.Unicode("jp-SearchIcon").tag(sync=True)
 
-    MODEL_ID = "MODEL"
-
-    description = trt.Unicode("Inspector").tag(sync=True)
-
-    include_empty = trt.Bool(default_value=False)
+    include_empty: bool = trt.Bool(default_value=False)
 
     clean_data: ty.Dict[str, dict] = trt.Dict(
         key_trait=trt.Unicode(),
         value_trait=trt.Dict(),
     )
+
+    FILTER_KEYS = ("@context",)
+    MODEL_ID = "MODEL"
 
     @trt.validate("layout")
     def _validate_layout(self, proposal):

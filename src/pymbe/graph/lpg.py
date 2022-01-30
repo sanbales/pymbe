@@ -226,7 +226,7 @@ class SysML2LabeledPropertyGraph(trt.HasTraits):  # pylint: disable=too-many-ins
             included_packages=tuple(sorted(included_packages)),
         ).copy()
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=1024)
     def _adapt(
         self,
         excluded_node_types: ty.Union[list, set, tuple] = None,

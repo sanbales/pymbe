@@ -1,7 +1,5 @@
 import networkx as nx
 
-from tests.conftest import kerbal_model_loaded_client
-
 
 def test_part_def_graph_ordering(kerbal_lpg):
 

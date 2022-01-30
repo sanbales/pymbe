@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from warnings import warn
 
@@ -35,7 +36,8 @@ class Diagram(ipyelk.Diagram):
 class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
     """An ipywidget to interact with a SysML2 model through an LPG."""
 
-    description = trt.Unicode("M1 Diagram").tag(sync=True)
+    description: str = trt.Unicode("M1 Diagram").tag(sync=True)
+    icon_class: str = trt.Unicode("jp-FileIcon").tag(sync=True)
 
     drawn_graph: nx.Graph = trt.Instance(
         nx.Graph,
@@ -57,6 +59,8 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
         args=(),
         help="The customized ipyelk loader for transforming the SysML LPG to ELK JSON",
     )
+
+    _task: asyncio.Future = None
 
     @trt.validate("children")
     def _validate_children(self, proposal: trt.Bunch):
@@ -199,17 +203,40 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
             if id_ in self.lpg.graph.edges
         )
 
-    async def _on_update_diagram_button_click(self, button: ipyw.Button):
+    def _on_update_diagram_button_click(self, button: ipyw.Button):
+        """Create asynchronous refresh task"""
+        if self._task:
+            self._task.cancel()
+
+        def post_run(future: asyncio.Task):
+            with self.log_out:
+                failed = False
+                try:
+                    future.exception()
+                except asyncio.CancelledError:
+                    print("Diagram update was cancelled!")
+                except Exception as exc:
+                    failed = True
+                    raise exc
+                finally:
+                    button.disabled = failed
+
+        self._task = task = asyncio.create_task(self._update_diagram_button_click(button))
+        task.add_done_callback(post_run)
+
+    async def _update_diagram_button_click(self, button: ipyw.Button) -> asyncio.Task:
         with self.log_out:
             button.disabled = failed = True
             try:
-                failed = self._update_drawn_graph(button=button)
+                self._update_drawn_graph(button=button)
+                failed = False
             except Exception:  # pylint: disable=broad-except
+                failed = True
                 warn(f"Button click for {button} failed: {traceback.format_exc()}")
             finally:
                 button.disabled = failed
 
-    def _update_drawn_graph(self, button: ipyw.Button = None) -> bool:
+    def _update_drawn_graph(self, button: ipyw.Button) -> bool:
         failed = False
         toolbar: Toolbar = self.elk_diagram.toolbar
         lpg = self.lpg
@@ -255,10 +282,9 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
                 failed = True
                 warn(
                     "Could not find path between "
-                    f"""{" and ".join(self.selected)}, with directionality """
-                    "not"
-                    if not toolbar.enforce_directionality
-                    else "" " enforced."
+                    f"""{" and ".join(self.selected)}, with directionality"""
+                    + (" not " if not toolbar.enforce_directionality else " ")
+                    + "enforced."
                 )
         elif button is toolbar.filter_by_dist:
             new_graph = lpg.get_spanning_graph(
@@ -276,8 +302,7 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
                 )
 
         self.drawn_graph = new_graph
-
-        return failed
+        button.disabled = failed
 
     @trt.observe("drawn_graph")
     def _push_drawn_graph(self, change: trt.Bunch = None):
@@ -289,11 +314,18 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
         if new == old:
             return
 
-        elk_diagram, loader = self.elk_diagram, self.loader
-        with self.log_out:
-            elk_diagram.style = loader.part_diagram.style
-            elk_diagram.symbols = loader.part_diagram.symbols
-            elk_diagram.source = loader.load_from_graphs(new=new, old=old)
+        def update_graph(loader, diagram, new, old):
+            with self.log_out:
+                diagram.style = loader.part_diagram.style
+                diagram.symbols = loader.part_diagram.symbols
+                diagram.source = loader.load_from_graphs(new=new, old=old)
+
+        update_graph(
+            loader=self.loader,
+            diagram=self.elk_diagram,
+            new=new,
+            old=old,
+        )
 
     @trt.observe("selected")
     def _update_based_on_selection(self, *_):

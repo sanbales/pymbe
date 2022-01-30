@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
 
@@ -55,6 +55,11 @@ class Naming(Enum):
         return f"""<{name} «{data["@type"]}»>"""
 
 
+class ModelClient:
+    def get_element_data(self, element_id: str) -> dict:
+        raise NotImplementedError("Must be implemented by the subclass")
+
+
 @dataclass(repr=False)
 class Model:  # pylint: disable=too-many-instance-attributes
     """A SysML v2 Model"""
@@ -81,6 +86,8 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
     source: Any = None
 
+    _api: ModelClient = None
+    _initializing: bool = True
     _naming: Naming = Naming.LONG  # The scheme to use for repr'ing the elements
 
     def __post_init__(self):
@@ -95,6 +102,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
         # Modify and add derived data to the elements
         self._add_relationships()
         self._add_labels()
+        self._initializing = False
 
     def __repr__(self) -> str:
         data = self.source or f"{len(self.elements)} elements"
@@ -102,12 +110,12 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def load(
-        elements: Union[List[Dict], Set[Dict], Tuple[Dict]],
+        elements: Collection[Dict],
         **kwargs,
     ) -> "Model":
         """Make a Model from an iterable container of elements"""
         return Model(
-            elements={element["@id"]: element for element in elements},
+            elements={element["@id"]: element for element in elements if "@id" in element},
             **kwargs,
         )
 
@@ -132,24 +140,77 @@ class Model:  # pylint: disable=too-many-instance-attributes
             element for element in self.elements.values() if element._metatype == "Package"
         )
 
-    def save_to_file(self, filepath: Union[Path, str], indent: int = 2) -> bool:
+    def get_element(
+        self, element_id: str, fail: bool = True, resolve: bool = True
+    ) -> Optional["Element"]:
+        """Get an element, or retrieve it from the API if it is there"""
+        element = self.elements.get(element_id)
+        if element and not isinstance(element, Element):
+            return element
+        if not element and self._api:
+            data = self._api.get_element_data(element_id) if resolve else {}
+            element = Element(_id=element_id, _data=data, _model=self)
+        if element and resolve and element._is_proxy:
+            element.resolve()
+        if fail and element is None:
+            raise KeyError(f"Could not retrieve '{element_id}' from the API")
+        return element
+
+    def _add_element(self, element: "Element") -> "Element":
+        id_ = element._id
+        metatype = element._metatype
+
+        self.elements[id_] = element
+
+        if not self._initializing:
+            self._add_labels(element)
+
+        if element.get_owner() is None:
+            if element not in self.ownedElement:
+                self.ownedElement += [element]
+
+        if metatype not in self.ownedMetatype:
+            self.ownedMetatype[metatype] = []
+        if element not in self.ownedMetatype[metatype]:
+            self.ownedMetatype[metatype] += [element]
+
+        if element._is_relationship:
+            if element not in self.ownedRelationship:
+                self.ownedRelationship += [element]
+            if id_ not in self.all_relationships:
+                self.all_relationships[id_] = element
+        else:
+            if id_ not in self.all_non_relationships:
+                self.all_non_relationships[id_] = element
+        return element
+
+    def save_to_file(self, filepath: Union[Path, str] = None, indent: int = 2):
+        filepath = filepath or self.name
+        if not self.elements:
+            warn("Model has no elements, nothing to save!")
+            return
         if isinstance(filepath, str):
             filepath = Path(filepath)
+        if not filepath.name.endswith(".json"):
+            filepath = filepath.parent / f"{filepath.name}.json"
+        if filepath.exists():
+            warn(f"Overwriting {filepath}")
         filepath.write_text(
             json.dumps(
-                [element._data for element in self.elements.values()],
+                [element._data for element in self.elements.values() if element._data],
                 indent=indent,
             ),
         )
 
-    def _add_labels(self):
+    def _add_labels(self, *elements):
         """Attempts to add a label to the elements"""
         from .label import get_label  # pylint: disable=import-outside-toplevel
 
-        for element in self.elements.values():
+        elements = elements or self.elements.values()
+        for element in elements:
             label = get_label(element=element)
             if label:
-                element._derived["label"] = label
+                element._label = label
 
     def _add_owned(self):
         """Adds owned elements, relationships, and metatypes to the model"""
@@ -186,7 +247,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
         for relationship in self.all_relationships.values():
             endpoints = {
                 endpoint_type: [
-                    self.elements[endpoint["@id"]]
+                    self.get_element(endpoint["@id"])
                     for endpoint in relationship._data[endpoint_type]
                 ]
                 for endpoint_type in ("source", "target")
@@ -203,38 +264,48 @@ class Model:  # pylint: disable=too-many-instance-attributes
 class Element:  # pylint: disable=too-many-instance-attributes
     """A SysML v2 Element"""
 
-    _data: dict
+    _data: Dict[str, Any]
     _model: Model
 
     _id: str = field(default_factory=lambda: str(uuid4()))
+    _label: str = None
     _metatype: str = "Element"
     _derived: Dict[str, List] = field(default_factory=lambda: defaultdict(list))
     # TODO: replace this with instances sequences
     # _instances: List["Instance"] = field(default_factory=list)
     _is_abstract: bool = False
+    _is_proxy: bool = True
     _is_relationship: bool = False
     _package: "Element" = None
 
     # TODO: Add comparison to allow sorting of elements (e.g., by name and then by id)
 
     def __post_init__(self):
-        if not self._data:
-            self._is_proxy = True
-        else:
+        if not self._model._initializing:
+            self._model.elements[self._id] = self
+        if self._data:
             self.resolve()
 
     def resolve(self):
+        if not self._is_proxy:
+            return
+
+        model = self._model
         if not self._data:
-            raise NotImplementedError("Need to add functionality to get data for the element")
+            if not model._api:
+                raise SystemError("Model must have an API to retrieve the data from!")
+            self._data = model._api.get_element_data(self._id)
         data = self._data
         self._id = data["@id"]
         self._metatype = data["@type"]
 
         self._is_abstract = bool(data.get("isAbstract"))
-        self._is_relationship = "relatedElement" in data
+        self._is_relationship = bool(data.get("relatedElement"))
         for key, items in data.items():
             if key.startswith("owned") and isinstance(items, list):
                 data[key] = ListOfNamedItems(items)
+        if not model._initializing:
+            self._model._add_element(self)
         self._is_proxy = False
 
     def __call__(self, *args, **kwargs):
@@ -281,17 +352,22 @@ class Element:  # pylint: disable=too-many-instance-attributes
         if isinstance(item, (dict, str)):
             item = self.__safe_dereference(item)
         elif isinstance(item, (list, tuple, set)):
-            items = [self.__safe_dereference(subitem) for subitem in item]
+            items = [self.__safe_dereference(sub_item) for sub_item in item]
             return type(item)(items)
         return item
 
     def __hash__(self):
-        return hash(self._data["@id"])
+        id_ = self._id
+        if id_ is None:
+            warn(
+                f"Element (oid={id(self)}, data={self._data}) has no '@id'! Generating one for it"
+            )
+            id_ = self._data["@id"] = str(uuid4())
+        return hash(id_)
 
     def __lt__(self, other):
         if isinstance(other, str):
-            if other in self._model.elements:
-                other = self._model.elements[other]
+            other = self._model.get_element(other, fail=False) or other
         if not isinstance(other, Element):
             raise ValueError(f"Cannot compare an element to {type(other)}")
         if self.get("name", None) and other.get("name", None):
@@ -302,12 +378,8 @@ class Element:  # pylint: disable=too-many-instance-attributes
         return self._model._naming.get_name(element=self)
 
     @property
-    def is_proxy(self):
-        return not self._data
-
-    @property
     def label(self) -> str:
-        return self._derived.get("label")
+        return self._label
 
     @property
     def relationships(self) -> Dict[str, Any]:
@@ -343,7 +415,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
             return default
 
     def get_element(self, element_id) -> "Element":
-        return self._model.elements.get(element_id)
+        return self._model.get(element_id)
 
     def get_owner(self) -> "Element":
         data = self._data
@@ -354,7 +426,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 break
         if owner_id is None:
             return None
-        return self._model.elements[owner_id]
+        return self._model.get_element(owner_id)
 
     @staticmethod
     def new(data: dict, model: Model) -> "Element":
@@ -367,7 +439,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 if len(item) > 1:
                     warn(f"Found a reference with more than one entry: {item}")
                 item = item["@id"]
-            return self._model.elements[item]
+            return self._model.get_element(item)
         except KeyError:
             return item
 

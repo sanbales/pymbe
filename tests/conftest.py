@@ -1,12 +1,11 @@
+# pylint: disable=redefined-outer-name
 from pathlib import Path
 from typing import Dict
 
 import pytest
-import traitlets as trt
 
 import pymbe
 import pymbe.api as pm
-from pymbe.client import SysML2Client
 from pymbe.graph import SysML2LabeledPropertyGraph
 from pymbe.interpretation.interp_playbooks import (
     build_expression_sequence_templates,
@@ -27,7 +26,7 @@ TESTS_ROOT = Path(__file__).parent
 FIXTURES = TESTS_ROOT / "fixtures"
 
 
-def get_client(filename: str) -> SysML2Client:
+def get_model(filename: str) -> pm.Model:
     if not filename.endswith(".json"):
         filename += ".json"
 
@@ -46,61 +45,39 @@ def get_client(filename: str) -> SysML2Client:
             f"{FIXTURES} exists: {fixtures_exists}" + contents
         )
 
-    helper_client = SysML2Client()
-    helper_client._load_from_file(json_file)
-
-    return helper_client
-
-
-def kerbal_model_loaded_client() -> SysML2Client:
-    return get_client("Kerbal")
-
-
-def simple_parts_model_loaded_client() -> SysML2Client:
-    return get_client("Simple Parts Model")
-
-
-def simple_actions_model_loaded_client() -> SysML2Client:
-    return get_client("Simple Actions Example")
+    return pm.Model.load_from_file(json_file)
 
 
 @pytest.fixture
-def kerbal_client() -> SysML2Client:
-    return kerbal_model_loaded_client()
+def kerbal_model() -> pm.Model:
+    return get_model("Kerbal")
 
 
 @pytest.fixture
-def kerbal_ids_by_type(kerbal_client) -> dict:
+def kerbal_ids_by_type(kerbal_model) -> dict:
     return {
         metatype: [element._id for element in elements]
-        for metatype, elements in kerbal_client.model.ownedMetatype.items()
+        for metatype, elements in kerbal_model.ownedMetatype.items()
     }
 
 
 @pytest.fixture
-def kerbal_stable_names():
-    client = kerbal_model_loaded_client()
-    lpg = SysML2LabeledPropertyGraph()
-    lpg.model = client.model
-    return build_stable_id_lookups(lpg)
+def kerbal_stable_names(kerbal_model):
+    return build_stable_id_lookups(SysML2LabeledPropertyGraph(model=kerbal_model))
 
 
 @pytest.fixture()
-def all_kerbal_names(kerbal_client) -> list:
-    all_elements = kerbal_client.model.elements
-
-    return [element._data["name"] for element in all_elements.values() if "name" in element._data]
+def all_kerbal_names(kerbal_model) -> list:
+    return [
+        element._data["name"]
+        for element in kerbal_model.elements.values()
+        if "name" in element._data
+    ]
 
 
 @pytest.fixture
-def kerbal_lpg() -> SysML2LabeledPropertyGraph:
-    new_lpg = SysML2LabeledPropertyGraph()
-    client = kerbal_model_loaded_client()
-    trt.link(
-        (client, "model"),
-        (new_lpg, "model"),
-    )
-    return new_lpg
+def kerbal_lpg(kerbal_model) -> SysML2LabeledPropertyGraph:
+    return SysML2LabeledPropertyGraph(model=kerbal_model)
 
 
 @pytest.fixture
@@ -186,26 +163,18 @@ def kerbal_random_stage_5_complete(
 
 
 @pytest.fixture
-def simple_parts_client() -> SysML2Client:
-    return simple_parts_model_loaded_client()
+def simple_parts_model() -> pm.Model:
+    return get_model("Simple Parts Model")
 
 
 @pytest.fixture
-def simple_parts_lpg() -> SysML2LabeledPropertyGraph:
-    new_lpg = SysML2LabeledPropertyGraph()
-    client = simple_parts_model_loaded_client()
-
-    new_lpg.model = client.model
-
-    return new_lpg
+def simple_parts_lpg(simple_parts_model) -> SysML2LabeledPropertyGraph:
+    return SysML2LabeledPropertyGraph(model=simple_parts_model)
 
 
 @pytest.fixture
-def simple_parts_stable_names():
-    client = simple_parts_model_loaded_client()
-    lpg = SysML2LabeledPropertyGraph()
-    lpg.model = client.model
-    return build_stable_id_lookups(lpg)
+def simple_parts_stable_names(simple_parts_model):
+    return build_stable_id_lookups(SysML2LabeledPropertyGraph(model=simple_parts_model))
 
 
 @pytest.fixture
@@ -270,23 +239,13 @@ def simple_parts_random_stage_3_complete(
 
 
 @pytest.fixture
-def simple_actions_client() -> SysML2Client:
-    return simple_actions_model_loaded_client()
+def simple_actions_model() -> pm.Model:
+    return get_model("Simple Action Example")
 
 
 @pytest.fixture
-def simple_actions_lpg() -> SysML2LabeledPropertyGraph:
-    new_lpg = SysML2LabeledPropertyGraph()
-    client = simple_actions_model_loaded_client()
-
-    new_lpg.model = client.model
-
-    return new_lpg
-
-
-@pytest.fixture
-def kerbal_model() -> pm.Model:
-    return pm.Model.load_from_file(FIXTURES / "Kerbal.json")
+def simple_actions_lpg(simple_actions_model) -> SysML2LabeledPropertyGraph:
+    return SysML2LabeledPropertyGraph(model=simple_actions_model)
 
 
 @pytest.fixture
@@ -298,11 +257,8 @@ def all_models() -> Dict[Path, pm.Model]:
 
 
 @pytest.fixture
-def simple_actions_stable_names():
-    client = simple_actions_model_loaded_client()
-    lpg = SysML2LabeledPropertyGraph()
-    lpg.model = client.model
-    return build_stable_id_lookups(lpg)
+def simple_actions_stable_names(simple_actions_model):
+    return build_stable_id_lookups(SysML2LabeledPropertyGraph(simple_actions_model))
 
 
 @pytest.fixture

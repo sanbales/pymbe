@@ -1,3 +1,11 @@
+from .interpretation.interp_playbooks import random_generator_playbook
+from .model import Instance, Model
+from .widget.client import APIClientWidget
+from .widget.containment import ContainmentTree
+from .widget.diagram import M0Viewer, M1Viewer
+from .widget.inspector import ElementInspector
+from .widget.ui import UI
+
 __all__ = (
     "ContainmentTree",
     "ElementInspector",
@@ -5,14 +13,7 @@ __all__ = (
     "M0Viewer",
     "M1Viewer",
     "Model",
-    "SysML2ClientWidget",
+    "APIClientWidget",
     "UI",
+    "random_generator_playbook",
 )
-
-
-from .model import Instance, Model
-from .widget.client import SysML2ClientWidget
-from .widget.containment import ContainmentTree
-from .widget.diagram import M0Viewer, M1Viewer
-from .widget.inspector import ElementInspector
-from .widget.ui import UI

@@ -1,18 +1,17 @@
 import re
 from datetime import datetime, timezone
 from functools import lru_cache
-from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Union
 from warnings import warn
 
 import ipywidgets as ipyw
 import requests
 import traitlets as trt
 from dateutil import parser
-from ipywidgets.widgets.trait_types import TypedTuple
 
-from .label import get_label
-from .model import Model
+from .model import Model, ModelClient
+
+URL_CACHE_SIZE = 1024
 
 TIMEZONES = {
     "CEST": "UTC+2",
@@ -37,7 +36,7 @@ TIMEZONES = {
 }
 
 
-class SysML2Client(trt.HasTraits):
+class APIClient(trt.HasTraits, ModelClient):
     """
         A traitleted SysML v2 API Client.
 
@@ -45,8 +44,6 @@ class SysML2Client(trt.HasTraits):
         - Add ability to use element download pagination.
 
     """
-
-    model: Model = trt.Instance(Model, allow_none=True)
 
     host_url = trt.Unicode(
         default_value="http://localhost",
@@ -59,15 +56,11 @@ class SysML2Client(trt.HasTraits):
     )
 
     page_size = trt.Integer(
-        default_value=5000,
+        default_value=200,
         min=1,
     )
 
     paginate = trt.Bool(default_value=True)
-
-    folder_path: Path = trt.Instance(Path, allow_none=True)
-    json_files: Tuple[Path] = TypedTuple(trt.Instance(Path))
-    json_file: Path = trt.Instance(Path, allow_none=True)
 
     selected_project: str = trt.Unicode(allow_none=True)
     selected_commit: str = trt.Unicode(allow_none=True)
@@ -116,34 +109,6 @@ class SysML2Client(trt.HasTraits):
     def _update_api_configuration(self, *_):
         self.projects = self._make_projects()
 
-    @trt.observe("selected_commit")
-    def _update_elements(self, *_, elements=None):
-        if not (self.selected_commit or elements):
-            return
-        elements = elements or []
-        self.model = Model.load(
-            elements=elements,
-            name=f"""{
-                self.projects[self.selected_project]["name"]
-            } ({self.host})""",
-            source=self.elements_url,
-        )
-        for element in self.model.elements.values():
-            if "label" not in element._derived:
-                element._derived["label"] = get_label(element)
-
-    @trt.observe("folder_path")
-    def _update_json_files(self, *_):
-        if self.folder_path.exists():
-            self.json_files = tuple(self.folder_path.glob("*.json"))
-
-    @trt.observe("json_file")
-    def _update_elements_from_file(self, change: trt.Bunch = None):
-        if change is None:
-            return
-        if change.new != change.old and change.new.exists():
-            self.model = Model.load_from_file(self.json_file)
-
     @property
     def host(self):
         return f"{self.host_url}:{self.host_port}"
@@ -167,34 +132,48 @@ class SysML2Client(trt.HasTraits):
             raise SystemError("No selected project!")
         if not self.selected_commit:
             raise SystemError("No selected commit!")
-        arguments = f"?page[size]={self.page_size}" if self.page_size else ""
-        return f"{self.commits_url}/{self.selected_commit}/elements{arguments}"
+        return f"{self.commits_url}/{self.selected_commit}/elements"
 
-    @lru_cache
-    def _retrieve_data(self, url: str) -> List[Dict]:
+    def reset_cache(self):
+        self._retrieve_paginated_data.cache_clear()
+
+    @staticmethod
+    def _retrieve_data(
+        url: str, process_response: bool = True
+    ) -> Union[List, Dict, requests.Response]:
+        response = requests.get(url)
+        if not response.ok:
+            raise requests.HTTPError(
+                f"Failed to retrieve elements from '{url}', reason: {response.reason}"
+            )
+        if not process_response:
+            return response
+        return response.json()
+
+    @lru_cache(maxsize=URL_CACHE_SIZE)
+    def _retrieve_paginated_data(
+        self, url: str, on_page: Callable = None, remove_empty_data: bool = True
+    ) -> List[Dict]:
         """Retrieve model data from a URL using pagination"""
-        result = []
+        data = []
         while url:
-            response = requests.get(url)
-
-            if not response.ok:
-                raise requests.HTTPError(
-                    f"Failed to retrieve elements from '{url}', reason: {response.reason}"
-                )
-
-            result += response.json()
-
+            response = self._retrieve_data(url, process_response=False)
+            data += response.json()
+            if on_page:
+                on_page()
             link = response.headers.get("Link")
             if not link:
                 break
-
             urls = self._next_url_regex.findall(link)
-            url = None
-            if len(urls) == 1:
-                url = urls[0]
-            elif len(urls) > 1:
-                raise SystemError(f"Found multiple 'next' pagination urls: {urls}")
-        return result
+            if len(urls) > 1:
+                raise requests.HTTPError(
+                    "Found multiple 'next' pagination urls: "
+                    ", ".join(map(lambda x: f"<{x}>", urls))
+                )
+            url = urls[0] if urls else None
+        if remove_empty_data:
+            return [item for item in data if item]
+        return data
 
     @staticmethod
     def _parse_timestamp(timestamp: str) -> datetime:
@@ -214,12 +193,38 @@ class SysML2Client(trt.HasTraits):
         commits = sorted(self._retrieve_data(self.commits_url), key=lambda x: x["timestamp"])
         return {commit["@id"]: clean_fields(commit) for commit in commits}
 
-    def _download_elements(self):
-        elements = self._retrieve_data(self.elements_url)
+    def get_model(self, on_page: Callable = None) -> Optional[Model]:
+        """Download a model from the current `elements_url`."""
+        if not self.selected_commit:
+            return None
+        url = self.elements_url
+        if self.page_size:
+            url += f"?page[size]={self.page_size}"
+        elements = self._retrieve_paginated_data(url=url, on_page=on_page)
+        total = len(elements)
+        # Remove bogus empty elements
+        elements = [
+            element for element in elements if isinstance(element, dict) and "@id" in element
+        ]
+        if total > len(elements):
+            warn(f"Downloaded {total-len(elements)} bad elements, will have to ignore them")
+        if not elements:
+            return None
+
         max_elements = self.page_size if self.paginate else 100
         if len(elements) == max_elements:
             warn("There are probably more elements that were not retrieved!")
-        self._update_elements(elements=elements)
 
-    def _load_from_file(self, file_path: Union[str, Path]):
-        self.model = Model.load_from_file(file_path)
+        return Model.load(
+            elements=elements,
+            name=self.projects[self.selected_project]["name"],
+            source=self.elements_url,
+            _api=self,
+        )
+
+    def get_element_data(self, element_id: str) -> dict:
+        try:
+            return self._retrieve_data(f"{self.elements_url}/{element_id}")
+        except requests.HTTPError:
+            warn(f"Could not retrieve data for {element_id}")
+            return {"@id": element_id, "@type": "Element"}

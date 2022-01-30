@@ -25,6 +25,8 @@ class M0Viewer(ipyw.Box, BaseWidget):
     """A viewer for M0 interpretations"""
 
     description: str = trt.Unicode("M0 Diagram").tag(sync=True)
+    icon_class: str = trt.Unicode("jp-ExtensionIcon").tag(sync=True)
+
     diagram: Diagram = trt.Instance(Diagram)
     loader: ElementLoader = trt.Instance(
         ElementLoader,
@@ -110,7 +112,7 @@ class M0Viewer(ipyw.Box, BaseWidget):
     def _generate_random_interpretation(self, *_):
         with self.log_out:
             self.interpretation = random_generator_playbook(
-                lpg=self.lpg,
+                m1=self.lpg,
                 filtered_feat_packages=self.package_selector.value,
             )
 

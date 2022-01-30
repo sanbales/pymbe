@@ -10,6 +10,7 @@ from ..model import Model
 class BaseWidget(ipyw.DOMWidget):
     """A base widget to enforce standardization with selectors."""
 
+    closable: bool = trt.Bool(False).tag(sync=True)
     description = trt.Unicode("Unnamed Widget").tag(sync=True)
 
     model: Model = trt.Instance(Model, allow_none=True, help="The instance of the SysML model.")

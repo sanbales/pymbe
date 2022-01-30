@@ -83,9 +83,12 @@ def generate_execution_order(lpg: SysML2LabeledPropertyGraph) -> list:
     return execution_pairs
 
 
-def generate_parameter_signature_map(model: Model, execution_order: list):
+def generate_parameter_signature_map(
+    model: Model, execution_order: list, replacement_log: list = None
+):
     # use the execution order to find better parameter names
     naming_map = {}
+    replacement_log = replacement_log or []
 
     for pair in execution_order:
         if pair[2] == "Assignment":
@@ -119,9 +122,13 @@ def generate_parameter_signature_map(model: Model, execution_order: list):
             else:
                 right_side = get_label_for_id(pair[1], model)
             if pair[0] in naming_map:
-                new_expr = right_side.replace(
-                    get_label_for_id(pair[0], model), naming_map[pair[0]]
-                )
+                new_name = model.elements[pair[0]].effectiveName
+                replacement_log.append(f"Replacing {new_name} with {naming_map[pair[0]]}")
+                new_expr = right_side.replace(new_name, naming_map[pair[0]])
+
+                # new_expr = right_side.replace(
+                #    get_label_for_id(pair[0], model), naming_map[pair[0]]
+                # )
                 naming_map.update({pair[1]: new_expr})
             else:
                 naming_map.update({pair[1]: get_label_for_id(pair[1], model)})

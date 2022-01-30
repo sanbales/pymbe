@@ -1,6 +1,7 @@
 # a set of queries to run on Labeled Property Graphs
 import math
 from typing import List
+from warnings import warn
 
 import networkx as nx
 
@@ -42,6 +43,10 @@ def roll_up_multiplicity(
 
     banded_featuring_graph = lpg.get_projection("Expanded Banded")
 
+    # Need to check that we are dealing with a DAG, otherwise take care with cycles
+    if not nx.is_directed_acyclic_graph(banded_featuring_graph):
+        warn("Banded featuring graph is not an acyclic digraph!!!")
+
     banded_roots = [
         node
         for node in banded_featuring_graph.nodes
@@ -55,6 +60,7 @@ def roll_up_multiplicity(
         # case where the usage is actually top of a nesting set
         if feature_id == part_tree_root:
             total_mult = 1
+
         try:
             part_paths = nx.all_simple_paths(
                 banded_featuring_graph,

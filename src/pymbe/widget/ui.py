@@ -18,6 +18,7 @@ class UI(DockBox):
     m1_viewer: M1Viewer = trt.Instance(M1Viewer, args=())
 
     # links
+    log_out_links: list = trt.List()
     lpg_links: list = trt.List()
     model_links: list = trt.List()
     selector_links: list = trt.List()
@@ -31,7 +32,7 @@ class UI(DockBox):
         super().__init__(*args, **kwargs)
         self.description = "SysML Model"
 
-        self.tree.client.host_url = host_url
+        self.tree.api_client.host_url = host_url
 
         self.children = [
             self.tree,
@@ -57,24 +58,26 @@ class UI(DockBox):
         # TODO: find a way to avoid doing these three lines
         self._update_diagram_height()
 
-        all_widgets = self.inspector, self.m1_viewer, self.m0_viewer
+        all_widgets = self.tree, self.inspector, self.m1_viewer, self.m0_viewer
 
-        for widget in all_widgets:
-            trt.link((self, "log_out"), (widget, "log_out"))
+        self.log_out_links = [
+            trt.link((self, "log_out"), (widget, "log_out")) for widget in all_widgets
+        ]
 
+        first, *other_widgets = all_widgets
         self.model_links = [
             trt.link(
-                (self.tree, "model"),
+                (first, "model"),
                 (widget, "model"),
             )
-            for widget in all_widgets
+            for widget in other_widgets
         ]
         self.selector_links = [
             trt.link(
-                (self.tree, "selected"),
+                (first, "selected"),
                 (widget, "selected"),
             )
-            for widget in all_widgets
+            for widget in other_widgets
         ]
         self.lpg_links = [
             trt.link(
