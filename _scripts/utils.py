@@ -39,27 +39,43 @@ class COLOR:
     UNDERLINE = "\033[4m" if HAS_COLOR else "___ "
 
 
-def download_file(url: str, filename: Union[Path, str] = None, overwrite: bool = True) -> int:
+def download_file(
+    url: str,
+    filename: Union[Path, str] = None,
+    allow_redirects: bool = True,
+    overwrite: bool = True,
+    stream: bool = True,
+) -> int:
     """Download a file from a URL."""
+
+    if not filename:
+        filename = url.split("?")[0].split("/")[-1]
+    if isinstance(filename, str):
+        if Path(filename).name == filename:
+            filename = P.DOWNLOADS / filename
+        else:
+            filename = Path(filename)
+        filename = filename.resolve()
+    if filename.exists():
+        if overwrite:
+            print(f"{COLOR.WARNING} Will overwrite '{filename}' {COLOR.ENDC}")
+        else:
+            raise ValueError("{filename} already exists, and overwrite is not allowed!")
+
     try:
-        if not filename:
-            filename = url.split("?")[0].split("/")[-1]
-        if isinstance(filename, str):
-            if Path(filename).name == filename:
-                filename = P.DOWNLOADS / filename
-            else:
-                filename = Path(filename)
-            filename = filename.resolve()
-        if filename.exists():
-            if overwrite:
-                print(f"{COLOR.WARNING} Will overwrite '{filename}' {COLOR.ENDC}")
-        response = requests.get(url)
+        response = requests.get(url, allow_redirects=allow_redirects, stream=stream)
         if response.status_code == 200:
             if not filename.parent.exists():
                 filename.parent.mkdir(parents=True)
             if filename.exists():
                 filename.unlink()
-            filename.write_bytes(response.content)
+            if stream:
+                with filename.open("w") as file_pointer:
+                    for chunk in response.iter_content(chunk_size=1024): 
+                        if chunk:
+                            file_pointer.write(chunk)
+            else:
+                filename.write_bytes(response.content)
             print(f"{COLOR.OKGREEN} Downloaded {filename} from {url} {COLOR.ENDC}")
             return 0
     finally:

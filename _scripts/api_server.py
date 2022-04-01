@@ -209,7 +209,7 @@ class PostgreSQLProcess:  # pylint: disable=too-many-instance-attributes
             self.server("stop")
 
     def server(self, command: str, wait=False):
-        func = _check_output if wait else _run
+        func = _run if wait else _check_output
         print(f"{C.OKBLUE} running '{command}' server command {C.ENDC}")
 
         os_dep_args = ["-U", V.PSQL_USERNAME] if V.WIN else []
@@ -225,8 +225,9 @@ class PostgreSQLProcess:  # pylint: disable=too-many-instance-attributes
             wait=wait,
         )
 
+    @property
     def server_status(self):
-        return self.server("status", wait=True).decode()
+        return self.server("status", wait=True)  # .decode()
 
     def start_proc(self):
         if self.is_running():
