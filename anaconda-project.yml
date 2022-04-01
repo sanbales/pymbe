@@ -1,19 +1,39 @@
 name: pymbe
 
-icon:
+icon: docs/_images/icon.png
 
 description: |
   A pythonic Model-based Engineering analysis framework based on SysML v2.
 
+channels:
+- conda-forge
+- conda-forge/label/ipyelk_alpha  # TODO: Remove this when ipyelk=2 is released
+- nodefaults
+
+platforms:
+- linux-64
+- osx-64
+- win-64
+
 variables:
+  CONDA_EXE: mamba
   MAX_LINE_LENGTH: 99
+  PSQL_DBNAME: sysml2
+  PSQL_HOST: 127.0.0.1
+  PSQL_PORT: 5432
+  PSQL_USERNAME: postgres
+  PSQL_PASSWORD: pUtY0uR$eCr3tP@$sW0rDh3R3  # <-- IMPORTANT: This is not secure, don't use your real password
+  REMOTE_API_SERVER_URL: http://sysml2-sst.intercax.com  # or use http://sysml2.intercax.com
+  SBT_VERSION: 1.2.8
+  SYSML2_API_RELEASE: 2021-06
+  SYSML2_RELEASE: 2021-06.1
 
 commands:
   lab:
     description: launch lab
     env_spec: developer
-    unix: &lab jupyter lab --no-browser --debug
-    windows: *lab
+    unix: jupyter lab --no-browser --debug
+    windows: jupyter lab --no-browser --debug
   setup:
     description: setup development environment
     env_spec: developer
@@ -22,16 +42,21 @@ commands:
       pip install -e . --no-dependencies
     windows: |
       git submodule update --init & pip install -e . --no-dependencies
+  sysml:kernel:install:
+    description: setup SysML v2 kernel for JupyterLab in the `developer` environment
+    env_spec: developer
+    unix: python -m _scripts.kernel --install
+    windows: python -m _scripts.kernel --install
   lint:
     description: lint the code
     env_spec: developer
     unix: |
       isort .
-      black src/ tests/ -l {{MAX_LINE_LENGTH}}
-      flake8 src/
+      black src/ tests/ _scripts/ -l {{MAX_LINE_LENGTH}}
+      flake8 src/ _scripts/
       pylint src/ --rcfile=.pylintrc
     windows: |
-      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ & pylint src/ --rcfile=.pylintrc
+      isort . & black src/ tests/ _scripts/ -l {{MAX_LINE_LENGTH}} & flake8 src/ _scripts/ & pylint src/ --rcfile=.pylintrc
   package:
     description: make a source distribution
     env_spec: developer
@@ -47,6 +72,9 @@ commands:
     env_spec: developer
     unix: python -m tests.fixtures.update
     windows: python -m tests.fixtures.update
+  notebooks/Tutorial.ipynb:
+    env_spec: user
+    notebook: notebooks/Tutorial.ipynb
   push:fixtures:
     description: push the fixture data to the remote repo
     env_spec: developer
@@ -76,44 +104,35 @@ commands:
     env_spec: developer
     unix: twine upload -r testpypi dist/*
     windows: twine upload -r testpypi dist/* --verbose
-  notebooks/Tutorial.ipynb:
-    env_spec: user
-    notebook: notebooks/Tutorial.ipynb
+  sysml:api:setup:
+    description: setup the SysML v2 Pilot Implementation API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --setup
+    windows: python -m _scripts.api_server --setup
+  sysml:api:start:
+    description: setup the API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --start
+    windows: python -m _scripts.api_server --start
+  sysml:api:stop:
+    description: setup the API server
+    env_spec: api_server
+    unix: python -m _scripts.api_server --stop
+    windows: python -m _scripts.api_server --stop
   vscode:
     env_spec: developer
     unix: code .
     windows: code .
 
-channels:
-- conda-forge
-- conda-forge/label/ipyelk_alpha  # TODO: Remove this when ipyelk=2 is released
-- nodefaults
-
-platforms:
-- linux-64
-- osx-64
-- win-64
-
 env_specs:
-  user:
-    description: The environment for running the notebooks
+  api_server:
+    description: The environment for the SysML v2 Pilot API Server
+    inherit_from:
+    - _java
     packages:
-    - importnb
-    - ipyelk >=2.0.0a0,<3
-    - ipytree >=0.2.1,<1
-    - jupyterlab >=3.0,<4
-    - matplotlib
-    - networkx >=2.0,<3
-    - notebook
-    - numpy
-    - openmdao >=3.0,<4
-    - pyld
-    - rdflib
-    - rdflib-jsonld
-    - ruamel.yaml
-    - tabulate
-    - wxyz_html
-    - wxyz_lab
+    - colorama
+    - postgresql
+    - requests
   developer:
     description: The environment for developing pymbe
     inherit_from:
@@ -134,3 +153,37 @@ env_specs:
     - testbook
     - twine >=3.0,<3.4
     - wheel
+  user:
+    description: The environment for running the notebooks
+    inherit_from:
+    - _sysml_kernel
+    packages:
+    - importnb
+    - ipyelk >=2.0.0a0,<3
+    - ipytree >=0.2.1,<1
+    - jupyterlab >=3.0,<4
+    - matplotlib
+    - networkx >=2.0,<3
+    - notebook
+    - numpy
+    - openmdao >=3.0,<4
+    - pyld
+    - rdflib
+    - rdflib-jsonld
+    - ruamel.yaml
+    - tabulate
+    - wxyz_html
+    - wxyz_lab
+  # partial environments used for aggregating
+  _java:
+    description: The environment for the SysML v2 Pilot API Server
+    packages:
+    - openjdk >=11,<12
+  _sysml_kernel:
+    description: packages required by the SysML v2 Kernel
+    inherit_from:
+    - _java
+    packages:
+    - euporie
+    - graphviz =2
+    - nodejs =14

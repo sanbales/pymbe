@@ -87,6 +87,24 @@ Copy the URL where JupyterLab is running into your preferred browser, and you sh
 ## Widgets
 
 You can interact with the SysML v2 data using widgets, as illustrated below:
-![Composed Widget](https://user-images.githubusercontent.com/1438114/113528145-bb494280-958d-11eb-8d9f-5b8f7d2b1dbe.gif)
+![Composed Widget](https://user-images.githubusercontent.com/1438114/132993186-858063a7-1bb7-483b-b3be-0d61d3d27fca.gif)
 
 > If you can't see the animation clearly, click on it to see it in higher resolution.
+
+## Setup SysML Kernel
+
+If you want to experiment with the SysML v2 kernel, you can install it on the environment you want by running the following command:
+
+```bash
+anaconda-project run sysml:kernel:install
+```
+
+## Setup SysML API Kernel
+
+You can setup and run a local SysML Pilot Implementation API server by running:
+
+```bash
+anaconda-project run sysml:api:setup  # to install the service
+anaconda-project run sysml:api:start  # to start the server
+anaconda-project run sysml:api:stop   # to stop the server
+```

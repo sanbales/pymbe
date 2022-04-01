@@ -85,8 +85,8 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
             ActionUsage="copy",
             AttributeUsage="copy",  # "underline"
             Expression="code",
-            Feature="terminal",  # "pencil-alt",
-            Function="square-root-alt",
+            Feature="terminal",  # "pencil-alt"
+            Function="calculator",  # "square-root-alt"
             InvocationExpression="comment-alt",
             ItemDefinition="file-invoice",  # info
             LiteralInteger="quote-right",

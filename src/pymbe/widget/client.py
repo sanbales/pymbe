@@ -29,6 +29,8 @@ class FileLoader(FileBox, BaseWidget):
         self.children = []
 
     def _load_model(self, change: trt.Bunch):
+        if not change.new:
+            return
         with self.log_out:
             model_file, *other = self.children
             assert not other, f"Should only have one file, but also found {other}"
@@ -40,12 +42,13 @@ class FileLoader(FileBox, BaseWidget):
     @trt.observe("children")
     def _update_model(self, change: trt.Bunch):
         with self.log_out:
-            if isinstance(change.old, (list, tuple)) and change.old:
-                old, *_ = change.old
-                if isinstance(old, File):
-                    old.unobserve(self._load_model)
+            if isinstance(change.old, (list, tuple)):
+                for old in change.old:
+                    if isinstance(old, File):
+                        old.unobserve_all()
             if isinstance(change.new, (list, tuple)) and change.new:
-                new, *_ = change.new
+                new, *other = change.new
+                assert not other, f"Should only have one file, but also found {other}"
                 new.observe(self._load_model, "value")
 
 
@@ -65,7 +68,9 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
     project_selector: ipyw.Dropdown = trt.Instance(ipyw.Dropdown)
     commit_selector: ipyw.Dropdown = trt.Instance(ipyw.Dropdown)
     download_model: ipyw.Button = trt.Instance(ipyw.Button)
-    progress_bar: ipyw.IntProgress = trt.Instance(ipyw.IntProgress)
+    progress_bar: ipyw.FloatProgress = trt.Instance(ipyw.FloatProgress)
+
+    log_out: ipyw.Output = trt.Instance(ipyw.Output, args=())
 
     def __init__(self, n_rows=4, n_columns=12, **kwargs):
         super().__init__(n_rows=n_rows, n_columns=n_columns, **kwargs)
@@ -176,16 +181,16 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
         return button
 
     @trt.default("progress_bar")
-    def _make_progress_bar(self) -> ipyw.IntProgress:
-        progress_bar = ipyw.IntProgress(
+    def _make_progress_bar(self) -> ipyw.FloatProgress:
+        progress_bar = ipyw.FloatProgress(
             description="Loading:",
             min=0,
-            max=4,
-            step=1,
+            max=1,
             value=0,
         )
         progress_bar.style.bar_color = "gray"
         progress_bar.layout.visibility = "hidden"
+        progress_bar.description_tooltip = "Loading model..."
         return progress_bar
 
     @trt.observe("projects")
@@ -204,20 +209,40 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
         }
 
     def _download_model(self, *_):
-        progress = self.progress_bar
-        progress.value = 0
-        progress.layout.visibility = "visible"
+        with self.log_out:
+            progress = self.progress_bar
 
-        progress.value += 1
+            progress.style.bar_color = "gray"
+            progress.value = 0
+            progress.layout.visibility = "visible"
 
-        model = self.get_model()
-        if not model or not model.elements:
-            raise ValueError(f"Could not download model from: {self.elements_url}")
-        self.model = model
-        progress.value += 1
+            progress.value += 0.05
 
-        progress.value = progress.max
-        progress.layout.visibility = "hidden"
+            step_per_element = 0.0007
+            data = dict(page=0)
+
+            def on_page():
+                data["page"] += 1
+                page = data["page"]
+                elements = page * self.page_size
+                if (elements * step_per_element) > (0.75 * progress.max):
+                    progress.max *= 1.5
+                progress.description_tooltip = f"Retrieved page {page} ({elements} model elements)"
+                progress.value += self.page_size * step_per_element
+
+            progress.description_tooltip = "Downloading model..."
+            model = self.get_model(on_page=on_page)
+
+            if not model or not model.elements:
+                progress.description_tooltip = "Failed to download the model..."
+                progress.style = "danger"
+                raise ValueError(f"Could not download model from: {self.elements_url}")
+
+            progress.description_tooltip = "Finished downloading the model..."
+            self.model = model
+
+            progress.value = progress.max
+            progress.layout.visibility = "hidden"
 
     def _get_project_options(self):
         project_name_instances = Counter(project["name"] for project in self.projects.values())
@@ -225,12 +250,12 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
         return {
             data["name"]
             + (
-                f""" ({data["created"].strftime("%Y-%m-%d %H:%M:%S")})"""
+                f""" ({data["created"].strftime("%Y-%m-%d %H:%M:%S")} UTC)"""
                 if project_name_instances[data["name"]] > 1
                 else ""
             ): id_
             for id_, data in sorted(
                 self.projects.items(),
-                key=lambda x: x[1]["name"],
+                key=lambda x: (x[1]["name"], x[1]["created"]),
             )
         }

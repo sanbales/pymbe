@@ -13,7 +13,7 @@ def can_connect(host: str, port: int = 9000):
     try:
         requests.get(f"{host}:{port}")
         return True
-    except:  # pylint: disable=bare-except
+    except:  # pylint: disable=bare-except  # noqa: E722
         return False
 
 
