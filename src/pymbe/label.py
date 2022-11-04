@@ -5,11 +5,16 @@ from .model import Element, Model
 DEFAULT_MULTIPLICITY_LIMITS = dict(lower="0", upper="*")
 
 
+# TODO: maybe `label` should be "textualRepresentation"
+
+
 def get_label(element: Element) -> str:
     metatype = element._metatype
     model = element._model
     data = element._data
     name = data.get("name") or data.get("effectiveName")
+
+    return name or f"{metatype}({element._id})"
 
     # Get the element type(s)
     types: list = data.get("type") or []
@@ -50,6 +55,7 @@ def get_label_for_expression(
     metatype = expression._metatype
     if metatype not in (
         "Expression",
+        "FeatureChainExpression",
         "FeatureReferenceExpression",
         "InvocationExpression",
         "NullExpression",
@@ -103,7 +109,7 @@ def get_label_for_expression(
         ]
         prefix = non_parameter_members[0] if non_parameter_members else ""
     elif metatype == "OperatorExpression":
-        prefix = expression["operator"]
+        prefix = expression.get("operator", "UnspecifiedOperator")
     elif metatype == "InvocationExpression":
         prefix = type_names[0] if type_names else ""
     elif metatype == "PathStepExpression":
@@ -117,7 +123,7 @@ def get_label_for_expression(
                     path_step_names.append(refered.get("name") or refered._id)
 
         prefix = ".".join(path_step_names)
-    inputs = f""" ({", ".join(input_names)})""" if input_names else ""
+    inputs = f""" ({", ".join(map(lambda x: getattr(x, "name", str(x)), input_names))})""" if input_names else ""
     if result is None:
         return f"""{prefix}{inputs} => {"Null Result"}"""
     return f"""{prefix}{inputs} => {result.name or result.effectiveName}"""

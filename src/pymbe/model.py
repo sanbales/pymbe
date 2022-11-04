@@ -114,10 +114,9 @@ class Model:  # pylint: disable=too-many-instance-attributes
         **kwargs,
     ) -> "Model":
         """Make a Model from an iterable container of elements"""
-        return Model(
-            elements={element["@id"]: element for element in elements if "@id" in element},
-            **kwargs,
-        )
+        elements = {item["identity"]["@id"]: item["payload"] for item in elements}
+        _ = [element.update({"@id": identifier}) for identifier, element in elements.items()]
+        return Model(elements=elements, **kwargs)
 
     @staticmethod
     def load_from_file(filepath: Union[Path, str]) -> "Model":
@@ -154,6 +153,8 @@ class Model:  # pylint: disable=too-many-instance-attributes
             element.resolve()
         if fail and element is None:
             raise KeyError(f"Could not retrieve '{element_id}' from the API")
+            warn(f"Could not retrieve '{element_id}' from the API")
+            return None
         return element
 
     def _add_element(self, element: "Element") -> "Element":
@@ -296,7 +297,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 raise SystemError("Model must have an API to retrieve the data from!")
             self._data = model._api.get_element_data(self._id)
         data = self._data
-        self._id = data["@id"]
+        self._id = data["elementId"]
         self._metatype = data["@type"]
 
         self._is_abstract = bool(data.get("isAbstract"))
@@ -426,7 +427,10 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 break
         if owner_id is None:
             return None
-        return self._model.get_element(owner_id)
+        try:
+            return self._model.get_element(owner_id)
+        except KeyError:
+            return None
 
     @staticmethod
     def new(data: dict, model: Model) -> "Element":
@@ -442,6 +446,11 @@ class Element:  # pylint: disable=too-many-instance-attributes
             return self._model.get_element(item)
         except KeyError:
             return item
+
+
+@dataclass(repr=False)
+class Expression(Element):
+    """A subclassed Element to capture Expression pecularities..."""
 
 
 @dataclass
