@@ -4,10 +4,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Collection, Dict, List, Tuple, Union
+from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
-from pymbe.metamodel import MetaModel, derive_attribute
+
+from pymbe.metamodel import MetaModel
 
 OWNER_KEYS = ("owner", "owningRelatedElement", "owningRelationship")
 VALUE_METATYPES = ("AttributeDefinition", "AttributeUsage", "DataType")
@@ -106,7 +107,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
     _initializing: bool = True
     _naming: Naming = Naming.LABEL  # The scheme to use for repr'ing the elements
 
-    metamodel: MetaModel = None
+    metamodel: Optional[MetaModel] = None
 
     _metamodel_hints: Dict[str, List[List[str]]] = field(
         default_factory=dict
@@ -114,8 +115,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
     def __post_init__(self):
 
-        self.metamodel = MetaModel()
-
+        self.metamodel = self.metamodel or MetaModel()
         self._metamodel_hints = self.metamodel.metamodel_hints
 
         self.elements = {
@@ -426,7 +426,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 and self._metamodel_hints[key][3] == "EReference"
             ):
                 found = True
-                item = derive_attribute(key, self)
+                item = self.derive_attribute(key)
 
         if not found:
             raise KeyError(f"No '{key}' in {self}")
@@ -521,3 +521,44 @@ class Element:  # pylint: disable=too-many-instance-attributes
         except KeyError:
             return item
 
+    def derive_attribute(self, key: str):
+        # entry point for deriving attributes within elements on demand
+
+        attribute_derivations_by_key = dict(
+            type=self.derive_type,
+            ownedMember=self.derive_owned_member,
+        )
+
+        deriver = attribute_derivations_by_key.get(key)
+
+        if deriver:
+            return deriver()
+
+        if "owned" in key:
+            return self.derive_owned_x(key[5:])
+
+        raise NotImplementedError(f"The method to derive '{key}' has yet to be developed.")
+
+    def derive_type(self):
+        if hasattr(self, "throughFeatureTyping"):
+            return self.throughFeatureTyping
+        return []
+
+    def derive_owned_member(self):
+        found_ele = []
+
+        for owned_rel in self.ownedRelationship:
+            if owned_rel._metatype == "OwningMembership":
+                # TODO: Make this work with generalization of metatypes
+                for owned_related_ele in owned_rel.ownedRelatedElement:
+                    found_ele.append(owned_related_ele)
+
+        return found_ele
+
+    def derive_owned_x(self, owned_kind: str):
+        found_ele = []
+        for owned_rel in self.ownedRelationship:
+            for owned_related_ele in owned_rel.ownedRelatedElement:
+                if owned_related_ele._metatype == owned_kind:
+                    found_ele.append(owned_related_ele)
+        return found_ele

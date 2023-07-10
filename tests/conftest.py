@@ -50,8 +50,10 @@ def basic_load_files() -> Dict[str, pm.Model]:
     level3 = get_model_from_payload_form("Model_Loader_Test_Level_3")
     literal = get_model_from_payload_form("Model_Loader_Literal_Test")
     annex_a = get_model_from_payload_form("Annex_A_Bike_Example")
-    return {"Level1": level1,
-            "Level2": level2,
-            "Level3": level3,
-            "Literals": literal,
-            "AnnexA": annex_a}
+    return {
+        "Level1": level1,
+        "Level2": level2,
+        "Level3": level3,
+        "Literals": literal,
+        "AnnexA": annex_a,
+    }
