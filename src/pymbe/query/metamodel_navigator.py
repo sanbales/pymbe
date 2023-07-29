@@ -1,4 +1,6 @@
 # a collection of convenience methods to navigate the metamodel when inspecting user models
+from typing import List, Tuple
+
 from ..model import Element
 
 
@@ -8,49 +10,52 @@ def is_type_undefined_mult(type_ele: Element):
     mult_range = [
         mr for mr in type_ele.throughOwningMembership if mr["@type"] == "MultiplicityRange"
     ]
-    if len(mult_range) == 0:
-        return True
-    return False
+    return len(mult_range) == 0
 
 
 def is_multiplicity_one(type_ele):
     if "throughOwningMembership" not in type_ele._derived:
         return False
-    multiplicity_range = [
+
+    multiplicity_range, *_ = [
         mr for mr in type_ele.throughOwningMembership if mr["@type"] == "MultiplicityRange"
-    ][0]
-    literal_value = [
-        li.value
+    ]
+    literal_value = tuple(
+        int(li.value)
         for li in multiplicity_range.throughOwningMembership
         if li["@type"] == "LiteralInteger"
-    ]
-
+    )
+    if not literal_value:
+        return False
     if len(literal_value) == 1:
-        if literal_value[0] == 1:
-            return True
-    if len(literal_value) == 2:
-        if literal_value[0] == 1 and literal_value[1] == 1:
-            return True
-    return False
+        # TODO: Ask Bjorn: what if it is `1..*`, this would return True
+        return literal_value[0] == 1
+    elif literal_value == (1, ):
+        return True
+    return True
 
 
 def is_multiplicity_specific_finite(type_ele):
     if "throughOwningMembership" not in type_ele._derived:
         return False
-    multiplicity_range = [
+    multiplicity_range, *_ = [
         mr for mr in type_ele.throughOwningMembership if mr["@type"] == "MultiplicityRange"
-    ][0]
+    ]
     literal_value = [
         li.value
         for li in multiplicity_range.throughOwningMembership
         if li["@type"] == "LiteralInteger"
     ]
+    if not literal_value:
+        return False
 
     if len(literal_value) == 1:
-        if literal_value[0] > 1:
+        lower, *_ = literal_value
+        if lower > 1:
             return True
-    if len(literal_value) == 2:
-        if literal_value[0] > 1 and literal_value[0] == literal_value[1]:
+    elif len(literal_value) == 2:
+        lower, upper = literal_value
+        if lower > 1 and upper == lower:
             return True
     return False
 
@@ -117,16 +122,14 @@ def get_upper_multiplicty(type_ele):
     return upper_mult
 
 
-def identify_connectors_one_side(connectors):
-    one_sided = []
-    for connector in connectors:
-        if "throughEndFeatureMembership" in connector._derived:
-            for end_feature in connector.throughEndFeatureMembership:
-                if "throughReferenceSubsetting" in end_feature._derived:
-                    if (
-                        is_multiplicity_one(end_feature.throughReferenceSubsetting[0])
-                        and connector not in one_sided
-                    ):
-                        one_sided.append(connector)
-
-    return one_sided
+def identify_connectors_one_side(connectors: List[Element]) -> Tuple[Element]:
+    return tuple(
+        {
+            connector
+            for connector in connectors
+            for end_feature in connector.throughEndFeatureMembership
+            if "throughEndFeatureMembership" in connector._derived
+            and "throughReferenceSubsetting" in end_feature._derived
+            and is_multiplicity_one(end_feature.throughReferenceSubsetting[0])
+        }
+    )

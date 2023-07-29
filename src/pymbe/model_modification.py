@@ -323,8 +323,8 @@ def build_unioning_superset_classifier(
     unioned: bool = False,
 ):
     """
-    Take in a list of classifiers and generate a larger set from them. The larger set
-    will have some properties:
+    Take in a list of classifiers and generate a larger set from them. The larger
+    set will have some properties:
     - All classes will have Subclassification relationship to the larger class
     - The larger class will be derived as a union of the given list of classes
     """

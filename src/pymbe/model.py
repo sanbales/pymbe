@@ -107,15 +107,14 @@ class Model:  # pylint: disable=too-many-instance-attributes
     _initializing: bool = True
     _naming: Naming = Naming.LABEL  # The scheme to use for repr'ing the elements
 
-    metamodel: MetaModel = None
+    metamodel: Optional[MetaModel] = None
 
     _metamodel_hints: Dict[str, List[List[str]]] = field(
         default_factory=dict
     )  # hints about attribute primary v derived, expected value type, etc.
 
     def __post_init__(self):
-        self.metamodel = MetaModel()
-
+        self.metamodel = self.metamodel or MetaModel()
         self._metamodel_hints = self.metamodel.metamodel_hints
 
         self.elements = {
@@ -530,23 +529,23 @@ class Element:  # pylint: disable=too-many-instance-attributes
         except KeyError:
             return item
 
-    def derive_attribute(self, key: str) -> "Element":
+    def derive_attribute(self, key: str) -> Union["Element", Tuple["Element"]]:
         # entry point for deriving attributes within elements on demand
-
-        if key == "type":
-            return self.derive_type()
-        if "owned" in key and key not in ("ownedMember",):
+        attribute_derivations_by_key = dict(
+            type=self.derive_type,
+            ownedMember=self.derive_owned_member,
+        )
+        deriver = attribute_derivations_by_key.get(key)
+        if deriver:
+            return deriver()
+        if "owned" in key:
             return self.derive_owned_x(key[5:])
-        if key == "ownedMember":
-            return self.derive_owned_member()
+        raise NotImplementedError(f"The method to derive '{key}' has yet to be developed.")
 
-        raise NotImplementedError(f"The method to derive {key} has yet to be developed.")
-
-    def derive_type(self):
+    def derive_type(self) -> Tuple["Element"]:
         if hasattr(self, "throughFeatureTyping"):
             return self.throughFeatureTyping
-
-        return []
+        return ()
 
     def derive_owned_member(self) -> Tuple["Element"]:
         # TODO: Make this work with generalization of metatypes
@@ -564,3 +563,4 @@ class Element:  # pylint: disable=too-many-instance-attributes
             for owned_related_ele in owned_rel.ownedRelatedElement
             if owned_related_ele._metatype == owned_kind
         )
+
