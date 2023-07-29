@@ -75,9 +75,10 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
     def __init__(self, n_rows=4, n_columns=12, **kwargs):
         super().__init__(n_rows=n_rows, n_columns=n_columns, **kwargs)
 
-    def _ipython_display_(self, **kwargs):
-        super()._ipython_display_(**kwargs)
-        self._set_layout()
+    # FIXME: figure out where this is supposed to go or why it was needed.
+    # def _ipython_display_(self, **kwargs):
+    #     super()._ipython_display_(**kwargs)
+    #     self._set_layout()
 
     @trt.validate("children")
     def _set_children(self, proposal):
@@ -180,6 +181,7 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
         button.on_click(self._download_model)
         return button
 
+    # pylint: disable=no-self-use
     @trt.default("progress_bar")
     def _make_progress_bar(self) -> ipyw.FloatProgress:
         progress_bar = ipyw.FloatProgress(
@@ -204,7 +206,7 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
 
     def _get_commit_selector_options(self):
         return {
-            f"""{data["timestamp"].strftime("%a %b %d %H:%M:%S %Y")} <{id_}>""": id_
+            f"""{data["created"].strftime("%a %b %d %H:%M:%S %Y")} <{id_}>""": id_
             for id_, data in self._get_project_commits().items()
         }
 

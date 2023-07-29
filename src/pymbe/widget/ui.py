@@ -3,7 +3,7 @@ import traitlets as trt
 from wxyz.lab import DockBox, DockPop
 
 from .containment import ContainmentTree
-from .diagram import M0Viewer, M1Viewer
+from .diagram import M1Viewer
 from .inspector import ElementInspector
 
 
@@ -14,7 +14,6 @@ class UI(DockBox):
     # widgets
     tree: ContainmentTree = trt.Instance(ContainmentTree, args=())
     inspector: ElementInspector = trt.Instance(ElementInspector, args=())
-    m0_viewer: M0Viewer = trt.Instance(M0Viewer, args=())
     m1_viewer: M1Viewer = trt.Instance(M1Viewer, args=())
 
     # links
@@ -38,7 +37,6 @@ class UI(DockBox):
             self.tree,
             self.inspector,
             self.m1_viewer,
-            self.m0_viewer,
         ]
 
         self.dock_layout = dict(
@@ -58,7 +56,7 @@ class UI(DockBox):
         # TODO: find a way to avoid doing these three lines
         self._update_diagram_height()
 
-        all_widgets = self.tree, self.inspector, self.m1_viewer, self.m0_viewer
+        all_widgets = self.tree, self.inspector, self.m1_viewer
 
         self.log_out_links = [
             trt.link((self, "log_out"), (widget, "log_out")) for widget in all_widgets
@@ -79,16 +77,9 @@ class UI(DockBox):
             )
             for widget in other_widgets
         ]
-        self.lpg_links = [
-            trt.link(
-                (self.m1_viewer, "lpg"),
-                (self.m0_viewer, "lpg"),
-            )
-        ]
 
     @trt.observe("diagram_height")
     def _update_diagram_height(self, *_):
-        self.m0_viewer.layout.height = f"{self.diagram_height}vh"
         self.m1_viewer.layout.height = f"{self.diagram_height}vh"
 
     @classmethod

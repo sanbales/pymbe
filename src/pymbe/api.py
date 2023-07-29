@@ -1,19 +1,19 @@
+
 from .interpretation.interp_playbooks import random_generator_playbook
-from .model import Instance, Model
+from .model import Element, Model, is_id_item
 from .widget.client import APIClientWidget
 from .widget.containment import ContainmentTree
-from .widget.diagram import M0Viewer, M1Viewer
+from .widget.diagram import M1Viewer
 from .widget.inspector import ElementInspector
 from .widget.ui import UI
 
 __all__ = (
     "ContainmentTree",
     "ElementInspector",
-    "Instance",
-    "M0Viewer",
     "M1Viewer",
     "Model",
+    "Element",
     "APIClientWidget",
     "UI",
-    "random_generator_playbook",
+    "is_id_item",
 )

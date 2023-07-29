@@ -186,11 +186,11 @@ class APIClient(trt.HasTraits, ModelClient):
             for key, value in tuple(data.items()):
                 if not isinstance(key, str):
                     continue
-                if key == "timestamp":
+                if key == "created":
                     data[key] = self._parse_timestamp(value)
             return data
 
-        commits = sorted(self._retrieve_data(self.commits_url), key=lambda x: x["timestamp"])
+        commits = sorted(self._retrieve_data(self.commits_url), key=lambda x: x["created"])
         return {commit["@id"]: clean_fields(commit) for commit in commits}
 
     def get_model(self, on_page: Callable = None) -> Optional[Model]:

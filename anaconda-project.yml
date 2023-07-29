@@ -7,6 +7,7 @@ description: |
 
 variables:
   MAX_LINE_LENGTH: 99
+  PYTHONUTF8: 1
 
 commands:
   lab:
@@ -40,7 +41,7 @@ commands:
   test:
     description: run the tests
     env_spec: developer
-    unix: py.test tests/
+    unix: py.test tests/ -vvv --last-failed
     windows: py.test tests/
   download:fixtures:
     description: update the test fixtures from the Intercax server

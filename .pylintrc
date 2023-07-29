@@ -4,11 +4,12 @@ max-line-length = 99
 [MESSAGES CONTROL]
 disable=attribute-defined-outside-init,
         cyclic-import,
+        duplicate-code,
         fixme,
         missing-class-docstring,
         missing-function-docstring,
         missing-module-docstring,
-        no-self-use,
+        missing-timeout,
         protected-access,
         too-few-public-methods,
         too-many-ancestors,
@@ -18,6 +19,7 @@ disable=attribute-defined-outside-init,
         too-many-locals,
         too-many-nested-blocks,
         unused-argument,
+        use-dict-literal,
 
 [REPORTS]
 output-format=colorized

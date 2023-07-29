@@ -8,7 +8,11 @@ import networkx as nx
 from ..graph.lpg import SysML2LabeledPropertyGraph
 from ..label import get_label
 from ..model import Element
-from .metamodel_navigator import feature_multiplicity
+
+
+def feature_multiplicity():
+    # stubbing as obsolete method from metamodel_navigator that needs replacement
+    pass
 
 
 def roll_up_lower_multiplicity(

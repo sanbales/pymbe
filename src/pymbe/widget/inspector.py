@@ -24,6 +24,7 @@ class ElementInspector(ipyw.Output, BaseWidget):
     FILTER_KEYS = ("@context",)
     MODEL_ID = "MODEL"
 
+    # pylint: disable=no-self-use
     @trt.validate("layout")
     def _validate_layout(self, proposal):
         layout = proposal.value
