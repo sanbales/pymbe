@@ -73,7 +73,6 @@ class CalculationGroup:
 
                 elif src_metatype == "FeatureReferenceExpression":
                     for m0_obj in source_instances:
-
                         self.calculation_log.append(f"[FRE] {m0_obj} is expanding FRE...")
 
                         evaluate_and_apply_fre(m0_obj[-1], self.instance_dict)

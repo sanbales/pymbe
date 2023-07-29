@@ -306,7 +306,6 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
 
     def _observe_node_selection(self, change: trt.Bunch = None):
         with self.log_out:
-
             parent_node: ElementNode = change.owner
             selected: bool = change.new
 

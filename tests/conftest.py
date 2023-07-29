@@ -153,7 +153,6 @@ def kerbal_random_stage_5_complete(
     kerbal_lpg: SysML2LabeledPropertyGraph,
     kerbal_random_stage_4_complete: dict,
 ) -> dict:
-
     random_generator_playbook_phase_5(
         kerbal_lpg, kerbal_lpg.get_projection("Connection"), kerbal_random_stage_4_complete
     )

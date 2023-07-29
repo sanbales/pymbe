@@ -2,7 +2,6 @@ import networkx as nx
 
 
 def test_part_def_graph_ordering(kerbal_lpg):
-
     pdg = kerbal_lpg.get_projection("Part Definition")
     rocket_part = "63f5c455-261b-4a80-9a3b-5a9bef2361da"
     flea = "68f08797-0e68-47b1-bad5-9e734af2742f"

@@ -182,7 +182,9 @@ class Model:  # pylint: disable=too-many-instance-attributes
                 self.all_non_relationships[id_] = element
         return element
 
-    def save_to_file(self, filepath: Union[Path, str] = None, indent: int = 2, encoding: str = "utf-8"):
+    def save_to_file(
+        self, filepath: Union[Path, str] = None, indent: int = 2, encoding: str = "utf-8"
+    ):
         filepath = filepath or self.name
         if not self.elements:
             warn("Model has no elements, nothing to save!")

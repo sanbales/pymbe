@@ -1,6 +1,7 @@
 # TODO: Refactor this whole thing and integrate it better with the new Model approach
 # Module for computing useful labels and signatures for SysML v2 elements
 from warnings import warn
+
 from .model import Element, Model
 
 DEFAULT_MULTIPLICITY_LIMITS = dict(lower="0", upper="*")

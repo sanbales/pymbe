@@ -69,7 +69,6 @@ def test_basic_kerbal_solve(kerbal_lpg, kerbal_random_stage_5_complete, kerbal_s
 def test_path_step_expression_kerbal_solve(
     kerbal_lpg, kerbal_random_stage_5_complete, kerbal_stable_names
 ):
-
     # check that Path Step Expression has expected inputs
 
     id_to_qualified_name, qualified_name_to_id = kerbal_stable_names

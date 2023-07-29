@@ -141,7 +141,6 @@ def extend_sequences_by_sampling(
 def extend_sequences_with_new_instance(
     previous_sequences: list, lower_mult: int, upper_mult: int, m1_type: Element, first_step: bool
 ) -> list:
-
     total_draw, draws_per = 0, []
     for _ in range(0, len(previous_sequences)):
         draw = random.randint(lower_mult, upper_mult)
@@ -178,7 +177,6 @@ def extend_sequences_with_new_expr(
     expr_string: str,
     expr: dict,
 ) -> list:
-
     new_sequences = []
     for seq in previous_sequences:
         new_holder = LiveExpressionNode(
