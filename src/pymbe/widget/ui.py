@@ -1,13 +1,13 @@
 import ipywidgets as ipyw
 import traitlets as trt
-from ipylab import JupyterFrontEnd
+from ipylab import JupyterFrontEnd, Panel
 
 from .containment import ContainmentTree
 from .diagram import M1Viewer
 from .inspector import ElementInspector
 
 
-class UI(JupyterFrontEnd):
+class IntegratedApplication(JupyterFrontEnd):
     """A JupyterLab user interface for the integrated widget"""
 
     # widgets
@@ -65,6 +65,18 @@ class UI(JupyterFrontEnd):
         self.m1_viewer.layout.height = f"{self.diagram_height}vh"
 
     def add_panels(self):
-        self.shell.add(self.tree, "left")
-        self.shell.add(self.inspector, "main", {"mode": "split-right"})
+        # Make panels
+        tree, inspector, m1_viewer = map(
+            lambda x: Panel([x]), (self.tree, self.inspector, self.m1_viewer)
+        )
+
+        tree.title.icon_class = self.tree.icon_class
+        self.shell.add(tree, "left")
+
+        inspector.title.label = self.inspector.description
+        inspector.title.icon_class = self.inspector.icon_class
+        self.shell.add(inspector, "main", {"mode": "split-right"})
+
+        m1_viewer.title.label = self.m1_viewer.description
+        m1_viewer.title.icon_class = self.m1_viewer.icon_class
         self.shell.add(self.m1_viewer, "main", {"mode": "split-right"})

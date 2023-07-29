@@ -35,7 +35,6 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
 
     app: JupyterFrontEnd = trt.Instance(JupyterFrontEnd, allow_none=True)
 
-    description: str = trt.Unicode("Containment Tree").tag(sync=True)
     icon_class: str = trt.Unicode("jp-TreeViewIcon").tag(sync=True)
 
     api_client: APIClientWidget = trt.Instance(APIClientWidget)
