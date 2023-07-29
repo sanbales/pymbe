@@ -563,4 +563,3 @@ class Element:  # pylint: disable=too-many-instance-attributes
             for owned_related_ele in owned_rel.ownedRelatedElement
             if owned_related_ele._metatype == owned_kind
         )
-

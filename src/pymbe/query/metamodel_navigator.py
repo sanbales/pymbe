@@ -30,7 +30,7 @@ def is_multiplicity_one(type_ele):
     if len(literal_value) == 1:
         # TODO: Ask Bjorn: what if it is `1..*`, this would return True
         return literal_value[0] == 1
-    elif literal_value == (1, ):
+    if literal_value == (1, 1):
         return True
     return True
 
