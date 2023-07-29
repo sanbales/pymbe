@@ -17,7 +17,7 @@ locking_enabled: true
 env_specs:
   user:
     locked: true
-    env_spec_hash: f84304acacd4c890807fe1b2b312db87f4206a62
+    env_spec_hash: 401efe4dcb70df9a989072c24ac55b97dd090f11
     platforms:
     - linux-64
     - osx-64
@@ -26,7 +26,6 @@ env_specs:
       all:
       - aiofiles=22.1.0=pyhd8ed1ab_0
       - aiosqlite=0.19.0=pyhd8ed1ab_0
-      - annotated-types=0.5.0=pyhd8ed1ab_0
       - anyio=3.7.1=pyhd8ed1ab_0
       - argon2-cffi=21.3.0=pyhd8ed1ab_0
       - arrow=1.2.3=pyhd8ed1ab_0
@@ -115,7 +114,6 @@ env_specs:
       - ptyprocess=0.7.0=pyhd3deb0d_0
       - pure_eval=0.2.2=pyhd8ed1ab_0
       - pycparser=2.21=pyhd8ed1ab_0
-      - pydantic=2.1.1=pyhd8ed1ab_0
       - pygments=2.15.1=pyhd8ed1ab_0
       - pyld=2.0.3=pyhd8ed1ab_1
       - pysocks=1.7.1=pyha2e5f31_6
@@ -268,7 +266,7 @@ env_specs:
       - psutil=5.9.5=py311h2582759_0
       - pthread-stubs=0.4=h36c2ea0_1001
       - pulseaudio-client=16.1=hb77b528_4
-      - pydantic-core=2.4.0=py311h46250e7_0
+      - pydantic=1.10.12=py311h459d7ec_1
       - pyparsing=3.0.9=pyhd8ed1ab_0
       - pyqt5-sip=12.12.2=py311hb755f60_4
       - pyqt=5.15.9=py311hf0fb5b6_4
@@ -365,7 +363,7 @@ env_specs:
       - pillow=10.0.0=py310hd63a8c7_0
       - psutil=5.9.5=py310h90acd4f_0
       - pthread-stubs=0.4=hc929b4f_1001
-      - pydantic-core=2.4.0=py310h3461e44_0
+      - pydantic=1.10.12=py310h6729b98_1
       - pyparsing=3.1.0=pyhd8ed1ab_0
       - python=3.10.12=had23ca6_0_cpython
       - python_abi=3.10=3_cp310
@@ -460,7 +458,7 @@ env_specs:
       - psutil=5.9.5=py311ha68e1ae_0
       - pthread-stubs=0.4=hcd874cb_1001
       - pthreads-win32=2.9.1=hfa6e2cd_3
-      - pydantic-core=2.4.0=py311hc37eb10_0
+      - pydantic=1.10.12=py311ha68e1ae_1
       - pyparsing=3.0.9=pyhd8ed1ab_0
       - pyqt5-sip=12.12.2=py311h12c1d0e_4
       - pyqt=5.15.9=py311h125bc19_4
@@ -493,7 +491,7 @@ env_specs:
       - zstd=1.5.2=h12be248_7
   developer:
     locked: true
-    env_spec_hash: 1783d5f0f5f5fa01ace7d383cbe48098c4aebbfd
+    env_spec_hash: d94271cf538281c6f6030170584a7b26a5f6eac1
     platforms:
     - linux-64
     - osx-64
@@ -502,7 +500,6 @@ env_specs:
       all:
       - aiofiles=22.1.0=pyhd8ed1ab_0
       - aiosqlite=0.19.0=pyhd8ed1ab_0
-      - annotated-types=0.5.0=pyhd8ed1ab_0
       - anyio=3.7.1=pyhd8ed1ab_0
       - argon2-cffi=21.3.0=pyhd8ed1ab_0
       - arrow=1.2.3=pyhd8ed1ab_0
@@ -609,7 +606,6 @@ env_specs:
       - py=1.11.0=pyh6c4a22f_0
       - pycodestyle=2.10.0=pyhd8ed1ab_0
       - pycparser=2.21=pyhd8ed1ab_0
-      - pydantic=2.1.1=pyhd8ed1ab_0
       - pyflakes=3.0.1=pyhd8ed1ab_0
       - pygments=2.15.1=pyhd8ed1ab_0
       - pyld=2.0.3=pyhd8ed1ab_1
@@ -795,7 +791,7 @@ env_specs:
       - psutil=5.9.5=py311h2582759_0
       - pthread-stubs=0.4=h36c2ea0_1001
       - pulseaudio-client=16.1=hb77b528_4
-      - pydantic-core=2.4.0=py311h46250e7_0
+      - pydantic=1.10.12=py311h459d7ec_1
       - pyparsing=3.0.9=pyhd8ed1ab_0
       - pyqt5-sip=12.12.2=py311hb755f60_4
       - pyqt=5.15.9=py311hf0fb5b6_4
@@ -914,7 +910,7 @@ env_specs:
       - pillow=10.0.0=py310hd63a8c7_0
       - psutil=5.9.5=py310h90acd4f_0
       - pthread-stubs=0.4=hc929b4f_1001
-      - pydantic-core=2.4.0=py310h3461e44_0
+      - pydantic=1.10.12=py310h6729b98_1
       - pyparsing=3.1.0=pyhd8ed1ab_0
       - python=3.10.12=had23ca6_0_cpython
       - python_abi=3.10=3_cp310
@@ -1019,7 +1015,7 @@ env_specs:
       - psutil=5.9.5=py311ha68e1ae_0
       - pthread-stubs=0.4=hcd874cb_1001
       - pthreads-win32=2.9.1=hfa6e2cd_3
-      - pydantic-core=2.4.0=py311hc37eb10_0
+      - pydantic=1.10.12=py311ha68e1ae_1
       - pyparsing=3.0.9=pyhd8ed1ab_0
       - pyqt5-sip=12.12.2=py311h12c1d0e_4
       - pyqt=5.15.9=py311h125bc19_4

@@ -15,6 +15,7 @@ from .model import Model, ModelClient
 URL_CACHE_SIZE = 1024
 
 TIMEZONES = {
+    "EEST": "UTC+3",
     "CEST": "UTC+2",
     "CET": "UTC+1",
     "EDT": "UTC-4",

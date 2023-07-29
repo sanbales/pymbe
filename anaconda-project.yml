@@ -110,6 +110,7 @@ env_specs:
     - numpy
     - openmdao >=3.0,<4
     - pandas
+    - pydantic >=1.0,<2  # reason: ipyelk breaks with pydantic v2 
     - pyld
     - rdflib
     - rdflib-jsonld
