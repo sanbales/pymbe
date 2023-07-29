@@ -1,15 +1,14 @@
 import ipywidgets as ipyw
 import traitlets as trt
-from wxyz.lab import DockBox, DockPop
+from ipylab import JupyterFrontEnd
 
 from .containment import ContainmentTree
 from .diagram import M1Viewer
 from .inspector import ElementInspector
 
 
-@ipyw.register
-class UI(DockBox):
-    """A user interface for the integrated widget"""
+class UI(JupyterFrontEnd):
+    """A JupyterLab user interface for the integrated widget"""
 
     # widgets
     tree: ContainmentTree = trt.Instance(ContainmentTree, args=())
@@ -27,34 +26,13 @@ class UI(DockBox):
 
     log_out: ipyw.Output = trt.Instance(ipyw.Output, args=())
 
+    @trt.default("tree")
+    def _make_tree(self) -> ContainmentTree:
+        return ContainmentTree(app=self)
+
     def __init__(self, host_url, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.description = "SysML Model"
-
-        self.tree.api_client.host_url = host_url
-
-        self.children = [
-            self.tree,
-            self.inspector,
-            self.m1_viewer,
-        ]
-
-        self.dock_layout = dict(
-            type="split-area",
-            orientation="horizontal",
-            children=[
-                dict(type="tab-area", widgets=[0], currentIndex=0),
-                dict(
-                    type="tab-area",
-                    widgets=[1, 2, 3],
-                    currentIndex=0,
-                ),
-            ],
-            sizes=[0.22, 0.78],
-        )
-
-        # TODO: find a way to avoid doing these three lines
-        self._update_diagram_height()
 
         all_widgets = self.tree, self.inspector, self.m1_viewer
 
@@ -78,22 +56,15 @@ class UI(DockBox):
             for widget in other_widgets
         ]
 
+        self.add_panels()
+        # TODO: find a way to avoid doing these three lines
+        self._update_diagram_height()
+
     @trt.observe("diagram_height")
     def _update_diagram_height(self, *_):
         self.m1_viewer.layout.height = f"{self.diagram_height}vh"
 
-    @classmethod
-    def new(cls, host_url: str) -> DockPop:
-        sysml_ui = cls(host_url=host_url)
-        dock_pop = DockPop([sysml_ui], description="SysML Model")
-
-        def _add(widget: ipyw.DOMWidget, mode="split-right"):
-            """Add the example preview in a new JupyterLab DockPanel tab"""
-            dock_pop.mode = mode
-            dock_pop.children += (widget,)
-
-        for child in sysml_ui.children:
-            if "add_widget" in child.trait_names():
-                child.add_widget = _add
-
-        return dock_pop
+    def add_panels(self):
+        self.shell.add(self.tree, "left")
+        self.shell.add(self.inspector, "main", {"mode": "split-right"})
+        self.shell.add(self.m1_viewer, "main", {"mode": "split-right"})

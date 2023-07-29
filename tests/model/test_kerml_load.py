@@ -3,8 +3,6 @@ from uuid import uuid4
 
 import pytest
 
-from pymbe.model import Element, Model
-
 
 def test_classifier_load(basic_load_files):
     """
@@ -53,7 +51,6 @@ def test_classifier_load(basic_load_files):
 
 
 def test_feature_load(basic_load_files):
-
     """
     Test that the file loaders can get KerML Features and identify them by name and metatype
     """
@@ -139,7 +136,6 @@ def test_feature_load(basic_load_files):
 
 
 def test_memberships_load(basic_load_files):
-
     """
     Test that the file loaders can get KerML Memberships (owning and feature) and identify them by metatype and names of ends
     """
@@ -180,7 +176,6 @@ def test_memberships_load(basic_load_files):
 
 
 def test_invariant_load(basic_load_files):
-
     """
     Test proper loading of a simple expression tree
     """

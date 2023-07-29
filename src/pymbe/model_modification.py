@@ -2,7 +2,7 @@ import copy
 from typing import Any, Dict, List
 from uuid import uuid4
 
-from pymbe.model import Element, Model
+from .model import Element, Model
 
 
 def create_element_data_dictionary(
@@ -30,7 +30,6 @@ def create_element_data_dictionary(
 def build_from_classifier_pattern(
     owner: Element, name: str, model: Model, metatype: str, specific_fields: Dict[str, Any]
 ):
-
     """
     Creates a new element using a classifier-style pattern that assumes:
     - The new element will need an owner
@@ -61,7 +60,6 @@ def build_from_binary_relationship_pattern(
     alternative_owner: Element,
     specific_fields: Dict[str, Any],
 ):
-
     """
     Creates a new element using a graph relationship-style pattern that assumes:
     - The new element may be owned by its source or some other element
@@ -108,7 +106,6 @@ def build_from_feature_pattern(
     metatype: str = "Feature",
     connector_end: bool = False,
 ):
-
     """
     Creates a new element using a feature-style pattern that assumes:
     - The Feature will have some special kind of membership connecting it to the owner
@@ -169,7 +166,6 @@ def build_from_binary_assoc_pattern(
     owner: Element,
     specific_fields: Dict[str, Any],
 ):
-
     """
     Creates a series of new elements using an association-style pattern that assumes:
     - The association is binary (only one source, one target)
@@ -217,7 +213,6 @@ def build_from_binary_connector_pattern(
     owner: Element,
     specific_fields: Dict[str, Any],
 ):
-
     """
     Creates a series of new elements using a connector-style pattern that assumes:
     - The connector is binary (only one source, one target)
@@ -342,7 +337,6 @@ def build_unioning_superset_classifier(
     )
 
     for clz in classes:
-
         subclass_added_data = {
             "specific": {"@id": clz._id},
             "general": {"@id": new_super._id},
@@ -440,10 +434,8 @@ def apply_covered_feature_pattern(
 
 
 def build_covering_classifier_for_connector():
-
     pass
 
 
 def build_snapshot_for_classifier():
-
     pass

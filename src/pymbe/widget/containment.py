@@ -5,7 +5,7 @@ from pathlib import Path
 import ipytree as ipyt
 import ipywidgets as ipyw
 import traitlets as trt
-from wxyz.lab import DockPop
+from ipylab import JupyterFrontEnd
 
 from ..model import Element, Model
 from .client import APIClientWidget, FileLoader
@@ -32,6 +32,8 @@ class ElementNode(ipyt.Node):
 @ipyw.register
 class ContainmentTree(ipyw.VBox, BaseWidget):
     """A widget to explore the structure and data in a project."""
+
+    app: JupyterFrontEnd = trt.Instance(JupyterFrontEnd, allow_none=True)
 
     description: str = trt.Unicode("Containment Tree").tag(sync=True)
     icon_class: str = trt.Unicode("jp-TreeViewIcon").tag(sync=True)
@@ -122,18 +124,16 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
             for widget in (self.api_client, self.file_loader):
                 trt.link((self, linked_attribute), (widget, linked_attribute))
 
-    # pylint: disable=no-self-use
     @trt.default("api_client")
     def _make_api_client(self) -> APIClientWidget:
         api_client = APIClientWidget(host_url="http://sysml2.intercax.com")
         api_client._set_layout()
         return api_client
 
-    # pylint: disable=no-self-use
     @trt.default("add_widget")
     def _make_add_widget(self) -> ty.Callable:
         def add_widget(widget: ipyw.DOMWidget, mode="split-right"):
-            DockPop([widget], mode=mode)
+            self.app.shell.add(widget, "main", {"mode": "split-top"})
 
         return add_widget
 
@@ -185,7 +185,6 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
             ]
         )
 
-    # pylint: disable=no-self-use
     @trt.validate("layout")
     def _validate_layout(self, proposal: trt.Bunch) -> ipyw.Layout:
         layout = proposal.value

@@ -3,7 +3,6 @@ from pymbe.query.metamodel_navigator import *
 
 
 def test_feature_mult_check(basic_load_files):
-
     # Tests the feature multiplicity of features
 
     annex_a = basic_load_files["AnnexA"]
@@ -19,7 +18,6 @@ def test_feature_mult_check(basic_load_files):
 
 
 def test_classifier_special(basic_load_files):
-
     # Tests the production of supersetting classifiers
 
     annex_a = basic_load_files["AnnexA"]
@@ -74,7 +72,6 @@ def test_classifier_special(basic_load_files):
 
 
 def test_quasi_association_special(basic_load_files):
-
     # Tests the production of supersetting associations as classifier and feature
 
     annex_a = basic_load_files["AnnexA"]
@@ -133,7 +130,6 @@ def test_quasi_association_special(basic_load_files):
 
 
 def test_association_pattern(basic_load_files):
-
     # Tests the production of supersetting associations
 
     annex_a = basic_load_files["AnnexA"]
@@ -189,7 +185,6 @@ def test_association_pattern(basic_load_files):
 
 
 def test_connector_covering(basic_load_files):
-
     # Tests the production of supersetting associations and covering of connector
 
     annex_a = basic_load_files["AnnexA"]

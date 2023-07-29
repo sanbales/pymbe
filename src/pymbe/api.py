@@ -1,5 +1,3 @@
-
-from .interpretation.interp_playbooks import random_generator_playbook
 from .model import Element, Model, is_id_item
 from .widget.client import APIClientWidget
 from .widget.containment import ContainmentTree

@@ -25,7 +25,6 @@ class SysmlLoader(ElementLoader):  # pylint: disable=abstract-method
     )
     part_diagram: PartDiagram = trt.Instance(PartDiagram, args=())
 
-    # pylint: disable=no-self-use
     @trt.default("default_node_opts")
     def _make_node_opts(self):
         return opt.OptionsWidget(
@@ -35,7 +34,6 @@ class SysmlLoader(ElementLoader):  # pylint: disable=abstract-method
             ]
         ).value
 
-    # pylint: disable=no-self-use
     @trt.default("default_label_opts")
     def _make_label_opts(self):
         return opt.OptionsWidget(

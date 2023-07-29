@@ -1,10 +1,4 @@
-import pytest
-
-from pymbe.model import Element, Model
-
-
 def test_expression_labels(basic_load_files):
-
     level3 = basic_load_files["Level3"]
 
     expected_labels = {

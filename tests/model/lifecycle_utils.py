@@ -61,7 +61,6 @@ class InstrumentedElement(Element):
 
 @dataclass(repr=False)
 class InstrumentedModel(Model):
-
     instrumented_name: str = "Bare Classed Feature"
     instrumented_element: InstrumentedElement = None
 

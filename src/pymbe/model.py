@@ -8,7 +8,7 @@ from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
 
-from pymbe.metamodel import MetaModel, derive_attribute
+from pymbe.metamodel import MetaModel
 
 OWNER_KEYS = ("owner", "owningRelatedElement", "owningRelationship")
 VALUE_METATYPES = ("AttributeDefinition", "AttributeUsage", "DataType")
@@ -114,7 +114,6 @@ class Model:  # pylint: disable=too-many-instance-attributes
     )  # hints about attribute primary v derived, expected value type, etc.
 
     def __post_init__(self):
-
         self.metamodel = MetaModel()
 
         self._metamodel_hints = self.metamodel.metamodel_hints
@@ -430,7 +429,7 @@ class Element:  # pylint: disable=too-many-instance-attributes
                 and self._metamodel_hints[key][3] == "EReference"
             ):
                 found = True
-                item = derive_attribute(key, self)
+                item = self.derive_attribute(key)
 
         if not found:
             raise KeyError(f"No '{key}' in {self}")
@@ -530,3 +529,38 @@ class Element:  # pylint: disable=too-many-instance-attributes
             return self._model.get_element(item)
         except KeyError:
             return item
+
+    def derive_attribute(self, key: str) -> "Element":
+        # entry point for deriving attributes within elements on demand
+
+        if key == "type":
+            return self.derive_type()
+        if "owned" in key and key not in ("ownedMember",):
+            return self.derive_owned_x(key[5:])
+        if key == "ownedMember":
+            return self.derive_owned_member()
+
+        raise NotImplementedError(f"The method to derive {key} has yet to be developed.")
+
+    def derive_type(self):
+        if hasattr(self, "throughFeatureTyping"):
+            return self.throughFeatureTyping
+
+        return []
+
+    def derive_owned_member(self) -> Tuple["Element"]:
+        # TODO: Make this work with generalization of metatypes
+        return tuple(
+            owned_related_ele
+            for owned_rel in self.ownedRelationship
+            for owned_related_ele in owned_rel.ownedRelatedElement
+            if owned_rel._metatype == "OwningMembership"
+        )
+
+    def derive_owned_x(self, owned_kind: str) -> Tuple["Element"]:
+        return tuple(
+            owned_related_ele
+            for owned_rel in self.ownedRelationship
+            for owned_related_ele in owned_rel.ownedRelatedElement
+            if owned_related_ele._metatype == owned_kind
+        )

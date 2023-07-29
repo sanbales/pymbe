@@ -6,9 +6,9 @@ import ipywidgets as ipyw
 import matplotlib.pyplot as plt
 import networkx as nx
 import traitlets as trt
+from ipylab import Panel
 from IPython.display import HTML, IFrame, display
 from ipywidgets.widgets.trait_types import TypedTuple
-from wxyz.lab import DockBox, DockPop
 
 import openmdao.api as om
 import pymbe.api as pm
@@ -343,7 +343,7 @@ class CircuitGenerator(ipyw.VBox):
         )
 
 
-class ParametricExecutor(DockBox):
+class ParametricExecutor(Panel):
     """
         A controller for a model's parameters, runs it, and displays the results.
 
@@ -581,8 +581,8 @@ class CircuitUI(DockPop):
         "sizes": [0.2, 0.8],
     }
 
-    panels: DockBox = trt.Instance(
-        DockBox, kw=dict(description="Circuit Generator", dock_layout=DEFAULT_LAYOUT)
+    panels: Panel = trt.Instance(
+        Panel, kw=dict(description="Circuit Generator", dock_layout=DEFAULT_LAYOUT)
     )
 
     circuit_model: pm.Model = trt.Instance(pm.Model, allow_none=True)

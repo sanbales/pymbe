@@ -1,10 +1,4 @@
-import pytest
-
-from pymbe.model import Element, Model
-
-
 def test_derive_type_attribute(basic_load_files):
-
     level1 = basic_load_files["Level1"]
 
     level1_features = [
@@ -21,7 +15,6 @@ def test_derive_type_attribute(basic_load_files):
 
 
 def test_derive_ownedmember(basic_load_files):
-
     level1 = basic_load_files["Level1"]
 
     ns = [oe for oe in level1.ownedElement if oe._metatype == "Namespace"]

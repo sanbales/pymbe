@@ -1,5 +1,5 @@
 # a collection of convenience methods to navigate the metamodel when inspecting user models
-from pymbe.model import Element
+from ..model import Element
 
 
 def is_type_undefined_mult(type_ele: Element):
@@ -122,7 +122,6 @@ def identify_connectors_one_side(connectors):
     for connector in connectors:
         if "throughEndFeatureMembership" in connector._derived:
             for end_feature in connector.throughEndFeatureMembership:
-
                 if "throughReferenceSubsetting" in end_feature._derived:
                     if (
                         is_multiplicity_one(end_feature.throughReferenceSubsetting[0])

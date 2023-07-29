@@ -63,7 +63,6 @@ def get_label_for_id(element_id: str, model: Model) -> str:
 
 
 def get_label_for_expression(expression: Element) -> str:
-
     meta = expression._metatype
 
     expression_label = f"<<{meta} {expression._id}>>"

@@ -3,7 +3,6 @@ from collections import Counter
 
 import ipywidgets as ipyw
 import traitlets as trt
-from wxyz.html import File, FileBox
 
 from ..client import APIClient
 from ..model import Model
@@ -13,7 +12,7 @@ __all__ = ("APIClientWidget", "FileLoader")
 
 
 @ipyw.register
-class FileLoader(FileBox, BaseWidget):
+class FileLoader(ipyw.FileUpload, BaseWidget):
     """A simple UI for loading SysML models from disk."""
 
     closable: bool = trt.Bool(True).tag(sync=True)
@@ -22,34 +21,24 @@ class FileLoader(FileBox, BaseWidget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.accept = ["json"]
+        self.accept = ".json"
         self.multiple = False
 
     def update(self, *_):
-        self.children = []
+        self.value = ()
 
-    def _load_model(self, change: trt.Bunch):
-        if not change.new:
-            return
-        with self.log_out:
-            model_file, *other = self.children
-            assert not other, f"Should only have one file, but also found {other}"
-            self.model = Model.load(
-                elements=json.loads(change.new),
-                name=".".join(model_file.name.split(".")[:-1]),
-            )
-
-    @trt.observe("children")
+    @trt.observe("value")
     def _update_model(self, change: trt.Bunch):
         with self.log_out:
-            if isinstance(change.old, (list, tuple)):
-                for old in change.old:
-                    if isinstance(old, File):
-                        old.unobserve_all()
-            if isinstance(change.new, (list, tuple)) and change.new:
-                new, *other = change.new
+            if not change.new:
+                return
+            with self.log_out:
+                model_file, *other = self.value
                 assert not other, f"Should only have one file, but also found {other}"
-                new.observe(self._load_model, "value")
+                self.model = Model.load(
+                    elements=json.loads(model_file.content),
+                    name=".".join(model_file["name"].split(".")[:-1]),
+                )
 
 
 @ipyw.register
@@ -181,7 +170,6 @@ class APIClientWidget(APIClient, ipyw.GridspecLayout):
         button.on_click(self._download_model)
         return button
 
-    # pylint: disable=no-self-use
     @trt.default("progress_bar")
     def _make_progress_bar(self) -> ipyw.FloatProgress:
         progress_bar = ipyw.FloatProgress(

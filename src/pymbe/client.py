@@ -56,12 +56,14 @@ class Item:
 
     @classmethod
     def parse(cls, data: dict) -> "Item":
-        def dereferencer(value):
+        def dereference(value):
+            if isinstance(value, (list, set, tuple)):
+                return tuple(dereference(a_value) for a_value in value)
             if isinstance(value, dict) and len(value) == 1 and "@id" in value:
                 return value["@id"]
             return value
 
-        data = {key.replace("@", ""): dereferencer(value) for key, value in data.items()}
+        data = {key.replace("@", ""): dereference(value) for key, value in data.items()}
         # get the dataclass by the type
         cls = cls.all_subclasses().get(data.pop("type"))
         if not cls:
@@ -131,7 +133,7 @@ class APIClient(trt.HasTraits, ModelClient):
 
     @trt.default("projects")
     def _make_projects(self):
-        def process_project_safely(project) -> dict:
+        def process_project_safely(project) -> Dict[str, str]:
             # protect against projects that can't be parsed
             try:
                 name_with_date = project["name"] or f"""Project(id={project["@id"]})"""

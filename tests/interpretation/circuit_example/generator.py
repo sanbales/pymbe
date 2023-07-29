@@ -4,7 +4,6 @@ import typing as ty
 import networkx as nx
 
 import pymbe.api as pm
-from pymbe.interpretation.interp_playbooks import random_generator_playbook
 from pymbe.model import Element
 
 from .openmdao import execute_interpretation

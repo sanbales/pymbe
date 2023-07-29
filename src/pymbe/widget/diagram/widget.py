@@ -154,7 +154,6 @@ class M1Viewer(ipyw.Box, BaseWidget):  # pylint: disable=too-many-ancestors
 
         return diagram
 
-    # pylint: disable=no-self-use
     @trt.default("layout")
     def _default_layout(self):
         return dict(

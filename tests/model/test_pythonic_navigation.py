@@ -1,8 +1,3 @@
-import pytest
-
-from pymbe.model import Element, Model
-
-
 def test_pythonic_attributes(basic_load_files):
     """
     Test that primary attributes are loaded into elements such that they can be referenced as normal Python prpperties
