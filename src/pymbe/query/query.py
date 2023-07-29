@@ -42,7 +42,6 @@ def roll_up_multiplicity(
     feature: Element,
     bound: str,
 ) -> int:
-
     max_multiplicity = lpg.model.max_multiplicity
 
     banded_featuring_graph = lpg.get_projection("Expanded Banded")
@@ -153,7 +152,6 @@ def get_features_typed_by_type(
     lpg: SysML2LabeledPropertyGraph,
     type_id: str,
 ) -> list:
-
     ptg = lpg.get_projection("Part Typing")
     rdg = lpg.get_projection("Redefinition and Subsetting")
 

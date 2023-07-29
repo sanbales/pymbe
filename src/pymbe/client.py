@@ -1,7 +1,8 @@
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 from warnings import warn
 
 import ipywidgets as ipyw
@@ -34,6 +35,61 @@ TIMEZONES = {
     "ChST": "UTC+10",
     "WAKT": "UTC+12",
 }
+
+
+@dataclass
+class Item:
+    _id: str
+    created: Optional[Union[str, datetime]] = None
+    description: Optional[str] = None
+
+    @classmethod
+    def all_subclasses(cls) -> Dict[str, Type]:
+        return {
+            klass.__name__: klass
+            for klass in (
+                set(cls.__subclasses__()).union(
+                    [s for c in cls.__subclasses__() for s in c.all_subclasses()]
+                )
+            )
+        }
+
+    @classmethod
+    def parse(cls, data: dict) -> "Item":
+        def dereferencer(value):
+            if isinstance(value, dict) and len(value) == 1 and "@id" in value:
+                return value["@id"]
+            return value
+
+        data = {key.replace("@", ""): dereferencer(value) for key, value in data.items()}
+        # get the dataclass by the type
+        cls = cls.all_subclasses().get(data.pop("type"))
+        if not cls:
+            return None
+        return cls(**data)
+
+
+@dataclass
+class ProjectItem(Item):
+    owning_project: Optional["Project"] = None
+
+
+@dataclass
+class Commit(ProjectItem):
+    previous_commit: Optional["Commit"] = None
+
+
+@dataclass
+class Branch(ProjectItem):
+    head: Optional["Commit"] = None
+    referenced_commit: Optional["Commit"] = None
+
+
+@dataclass
+class Project(Item):
+    tags: Optional[Tuple[Commit]] = None
+    branches: Optional[Tuple[Branch]] = None
+    commits: Optional[Tuple[Commit]] = None
 
 
 class APIClient(trt.HasTraits, ModelClient):
@@ -78,7 +134,7 @@ class APIClient(trt.HasTraits, ModelClient):
         def process_project_safely(project) -> dict:
             # protect against projects that can't be parsed
             try:
-                name_with_date = project["name"]
+                name_with_date = project["name"] or f"""Project(id={project["@id"]})"""
                 name = " ".join(name_with_date.split()[:-6])
                 timestamp = " ".join(name_with_date.split()[-6:])
                 created = self._parse_timestamp(timestamp)
@@ -116,6 +172,14 @@ class APIClient(trt.HasTraits, ModelClient):
     @property
     def projects_url(self):
         return f"{self.host}/projects"
+
+    @property
+    def branches_url(self):
+        return f"{self.projects_url}/{self.selected_project}/branches"
+
+    @property
+    def tags_url(self):
+        return f"{self.projects_url}/{self.selected_project}/tags"
 
     @property
     def commits_url(self):

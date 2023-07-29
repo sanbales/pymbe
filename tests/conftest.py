@@ -1,6 +1,6 @@
 # pylint: disable=redefined-outer-name
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 import pytest
 
