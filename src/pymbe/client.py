@@ -11,31 +11,9 @@ import traitlets as trt
 from dateutil import parser
 
 from .model import Model, ModelClient
+from .static_data.timezones import TIMEZONES
 
 URL_CACHE_SIZE = 1024
-
-TIMEZONES = {
-    "EEST": "UTC+3",
-    "CEST": "UTC+2",
-    "CET": "UTC+1",
-    "EDT": "UTC-4",
-    "EST": "UTC-5",
-    "CDT": "UTC-5",
-    "CST": "UTC-6",
-    "MDT": "UTC-6",
-    "MST": "UTC-7",
-    "PDT": "UTC-7",
-    "PST": "UTC-8",
-    "AKDT": "UTC-8",
-    "AKST": "UTC-9",
-    "HDT": "UTC-9",
-    "HST": "UTC-10",
-    "AoE": "UTC-12",
-    "SST": "UTC-11",
-    "AST": "UTC-4",
-    "ChST": "UTC+10",
-    "WAKT": "UTC+12",
-}
 
 
 @dataclass
@@ -90,6 +68,9 @@ class Branch(ProjectItem):
 
 @dataclass
 class Project(Item):
+    name: str = None
+    default_branch: Optional["Branch"] = None
+
     tags: Optional[Tuple[Commit]] = None
     branches: Optional[Tuple[Branch]] = None
     commits: Optional[Tuple[Commit]] = None
