@@ -3,11 +3,21 @@
 from warnings import warn
 
 from .model import Element, Model
+from .query.metamodel_navigator import get_effective_basic_name
 
 DEFAULT_MULTIPLICITY_LIMITS = dict(lower="0", upper="*")
 
 
 def get_label(element: Element) -> str:  # pylint: disable=too-many-return-statements
+
+    """
+    Get a label for the element.
+    The difference between a label and a name is that the name is meant to provide something by
+    which to refer to the element in code or informally while processing a model. A label is
+    meant to be part of the display of the element either in a representation (repr) or view
+    of the model.
+    """
+
     metatype = element._metatype
     if metatype.endswith("Expression"):
         return f"{get_label_for_expression(element)} «{metatype}»"
@@ -36,6 +46,8 @@ def get_label(element: Element) -> str:  # pylint: disable=too-many-return-state
         return f"{name} «{metatype}»"
     if (
         metatype == "Feature"
+        and hasattr(element, "owningRelationship")
+        and element.owningRelationship is not None
         and "memberName" in element.owningRelationship._data
         and element.owningRelationship._metatype
         in ("ParameterMembership", "ReturnParameterMembership")
@@ -44,13 +56,20 @@ def get_label(element: Element) -> str:  # pylint: disable=too-many-return-state
         if "direction" in element._data:
             direction = element.direction + " "
         para_string = element.owningRelationship._data["memberName"]
+
         return f"{direction}{para_string} «{metatype}»"
 
+    if metatype == "LiteralBoolean":
+        metatype = type_names[0] if type_names else metatype.replace("Literal", "Occurred Literal")
+        return f"{value} «{metatype}»"
     if value and metatype.startswith("Literal"):
         metatype = type_names[0] if type_names else metatype.replace("Literal", "Occurred Literal")
         return f"{value} «{metatype}»"
     if metatype == "MultiplicityRange":
         return get_label_for_multiplicity(multiplicity=element)
+
+    if not name and element._metatype == "Feature":
+        return f":>>{get_effective_basic_name(element)} «{metatype}»"
 
     if "@id" in data:
         return f"""{data["@id"]} «{metatype}»"""
@@ -80,26 +99,37 @@ def get_label_for_expression(expression: Element) -> str:
 
     elif meta == "FeatureReferenceExpression":
         # case for FeatureReferenceExpression - terminal case #1
-        expression_label = expression.throughMembership[0].declaredName
+        try:
+            expression_label = expression.throughMembership[0].basic_name
+        except IndexError:
+            # if there is no direct reference, need to recurse on parameters
+            expression_label = get_label_for_expression(expression.throughFeatureMembership[0])
+            # expression_label = "Empty FRE"
     elif meta == "FeatureChainExpression":
-        # first item will be FRE to another feature
-        expression_label = (
-            expression.throughParameterMembership[0]
-            .throughFeatureValue[0]
-            .throughMembership[0]
-            .declaredName
-        )
-        # check if this is a two-item feature chain or n > 2
-        if "throughMembership" in expression._derived:
-            # if hasattr(expression, "throughMembership"):
-            # this is the n = 2 case
-            second_item = expression.throughMembership[0].declaredName
-            expression_label += f".{second_item}"
-        else:
-            # this is the n > 2 case
-            chains = expression.throughOwningMembership[0].throughFeatureChaining
-            other_items = ".".join([chain.declaredName for chain in chains])
-            expression_label += f".{other_items}"
+        try:
+            # first item will be FRE to another feature
+            expression_label = (
+                expression.throughParameterMembership[0]
+                .throughFeatureValue[0]
+                .throughMembership[0]
+                .basic_name
+            )
+            # check if this is a two-item feature chain or n > 2
+            if (
+                "throughMembership" in expression._derived
+                and len(expression.throughMembership) > 0
+            ):
+                # if hasattr(expression, "throughMembership"):
+                # this is the n = 2 case
+                second_item = expression.throughMembership[0].basic_name
+                expression_label += f".{second_item}"
+            else:
+                # this is the n > 2 case
+                chains = expression.throughOwningMembership[0].throughFeatureChaining
+                other_items = ".".join([chain.basic_name for chain in chains])
+                expression_label += f".{other_items}"
+        except IndexError as failed_link:
+            expression_label = "Empty FCE"
 
     # covers Literal expression cases
     elif "value" in expression._data:
@@ -107,9 +137,14 @@ def get_label_for_expression(expression: Element) -> str:
         expression_label = str(expression.value)
 
     elif expression._metatype == "InvocationExpression":
-        body = ", ".join(map(get_label_for_expression, expression.throughParameterMembership))
-        expression_label = f"{expression.throughFeatureTyping[0].declaredName}({body})"
+        try:
+            body = ", ".join(map(get_label_for_expression, expression.throughParameterMembership))
+            expression_label = f"{expression.throughFeatureTyping[0].declaredName}({body})"
+        except AttributeError:
+            expression_label = "Empty InvocationExpression"
 
+    elif expression._metatype == "NullExpression":
+        expression_label = "null"
     else:
         warn(f"Cannot process {expression._metatype} elements yet!")
     return expression_label
