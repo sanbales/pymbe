@@ -8,12 +8,8 @@ from typing import Any, Collection, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 from warnings import warn
 
-<<<<<<< HEAD
-from pymbe.metamodel import MetaModel
-=======
 from pymbe.metamodel import MetaModel, derive_attribute, list_relationship_metaclasses
 from pymbe.query.metamodel_navigator import get_effective_basic_name
->>>>>>> bjorn/main
 
 OWNER_KEYS = ("owner", "owningRelatedElement", "owningRelationship")
 VALUE_METATYPES = ("AttributeDefinition", "AttributeUsage", "DataType")
@@ -175,14 +171,10 @@ class Model:  # pylint: disable=too-many-instance-attributes
     ) -> "Model":
         """Make a Model from an iterable container of elements"""
         return Model(
-<<<<<<< HEAD
-            elements={element["@id"]: element for element in elements if "@id" in element},
-=======
             elements={
                 element.get("identity", element).get("@id"): element.get("payload", element)
                 for element in elements
             },
->>>>>>> bjorn/main
             **kwargs,
         )
 
