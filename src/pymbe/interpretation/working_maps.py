@@ -25,7 +25,7 @@ class FeatureTypeWorkingMap:
     represent the solution.
 
     The definition of feature value is taken from the KerML specification in Section 7.4.11:
-    
+
     A feature value is a membership relationship (see 7.2.5) between an owning feature and a
     value expression, whose result provides values for the feature. The feature value relationship
     is specified as either bound or initial, and as either fixed or a default. A feature can have
@@ -126,13 +126,14 @@ class FeatureTypeWorkingMap:
 
         map_string = ""
 
-        for type_instance_id in self._working_dict:
+        for type_instance_id, bound_features_to_atom_values_dict in self._working_dict.items():
             map_string = (
                 map_string
                 + f"Values mapped under type instance (atom) "
                 + f"{get_effective_basic_name(self._model.get_element(type_instance_id))}:\n"
             )
-            for feature_path in self._working_dict[type_instance_id]:
+            # for feature_path in self._working_dict[type_instance_id]:
+            for feature_path in bound_features_to_atom_values_dict.keys():
                 feature_rep = ".".join(
                     [str(self._model.get_element(item_id)) for item_id in feature_path.split(".")]
                 )
@@ -147,10 +148,10 @@ class FeatureTypeWorkingMap:
 
     def cover_features_in_new_atoms(self, target_packge):
 
-        for type_instance_id in self._working_dict:
+        for type_instance_id, bound_features_to_atom_values_dict in self._working_dict.items():
 
             type_instance = self._model.get_element(type_instance_id)
-            bound_features_to_atom_values_dict = self._working_dict[type_instance_id]
+            # bound_features_to_atom_values_dict = self._working_dict[type_instance_id]
 
             for bound_feature_id in bound_features_to_atom_values_dict.keys():
                 if len(bound_feature_id.split(".")) > 1:
@@ -161,13 +162,14 @@ class FeatureTypeWorkingMap:
                 bound_feature = self._model.get_element(element_id=bound_feature_id)
                 if bound_feature._metatype in feature_metas():
                     print(
-                        f"(Atom style)...Working to connect the feature {bound_feature} to generated types inside atom {type_instance} via "
-                        + f"covering pattern with values {bound_features_to_atom_values_dict[bound_feature_id]}."
+                        f"(Atom style)...Working to connect the feature {bound_feature} to "
+                        + f"generated types inside atom {type_instance} via covering pattern "
+                        + f"with values {bound_features_to_atom_values_dict[bound_feature_id]}."
                     )
 
                     covering_classifier_suffix = ""
 
-                    if get_effective_basic_name(bound_feature) in ("subperformances"):
+                    if get_effective_basic_name(bound_feature) == "subperformances":
                         covering_classifier_suffix = " under " + get_effective_basic_name(
                             type_instance
                         )
@@ -187,8 +189,9 @@ class FeatureTypeWorkingMap:
                     )
                 if bound_feature._metatype in connector_metas():
                     print(
-                        f"(Atom style)...Working to connect the feature {bound_feature} to generated types inside atom {type_instance} via "
-                        + f"covering pattern with values {bound_features_to_atom_values_dict[bound_feature_id]}."
+                        f"(Atom style)...Working to connect the feature {bound_feature} to "
+                        + f"generated types inside atom {type_instance} via covering pattern "
+                        + f"with values {bound_features_to_atom_values_dict[bound_feature_id]}."
                     )
                     print(f"...Building covered connector under {type_instance}")
 
@@ -208,7 +211,10 @@ class FeatureTypeWorkingMap:
                         separate_connectors=True,
                     )
 
-        for type_instance_id in self._working_dict_data_values:
+        for (
+            type_instance_id,
+            bound_features_to_atom_values_dict,
+        ) in self._working_dict_data_values.items():
 
             type_instance = self._model.get_element(type_instance_id)
             bound_features_to_atom_values_dict = self._working_dict_data_values[type_instance_id]

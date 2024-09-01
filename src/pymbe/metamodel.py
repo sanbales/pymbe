@@ -13,7 +13,8 @@ class MetaModel:
     A class to hold meta-model information and perform property derivation
     """
 
-    metamodel_hints: Dict[str, List[List[str]]] = field(default_factory=dict)
+    metamodel_hints: Dict[str, Dict[str, Dict[str, Any]]] = field(default_factory=dict)
+
     pre_made_dicts: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     relationship_metas: List[str]
@@ -26,58 +27,45 @@ class MetaModel:
 
     def _load_metahints(self):
         """Load data file to get attribute hints"""
-        ecore_atts, ecore_refs = {}, {}
-        with lib_resources.open_text("pymbe.static_data", "sysml_ecore_atts.json") as sysml_ecore:
-            ecore_atts = json.load(sysml_ecore)
+
         with lib_resources.open_text(
-            "pymbe.static_data", "sysml_ecore_derived_refs.json"
-        ) as sysml_ecore_refs:
-            ecore_refs = json.load(sysml_ecore_refs)
-
-        hints_build = {}
-
-        for att_key in ecore_atts.keys():
-            inner_build = {}
-            for ecore_att in ecore_atts[att_key]:
-                inner_build.update({ecore_att[0]: ecore_att[1:]})
-            for ecore_ref in ecore_refs[att_key]:
-                inner_build.update({ecore_ref[0]: ecore_ref[1:]})
-            hints_build.update({att_key: inner_build})
-
-        # keys should be the same since they are all identified metaelements from ecore
-        self.metamodel_hints = hints_build
+            "pymbe.static_data", "attribute_metadata.json"
+        ) as sysml_ecore:
+            self.metamodel_hints = json.load(sysml_ecore)
 
     def _load_template_data(self, metaclass_name: str):
-        defaults = {"Boolean": False, "String": "", "Integer": 0}
+        """
+        Generate empty data dictionaries per metatype to be used when new elements are
+        created by model modification functions. These templates resemble the raw JSON data
+        pulled from the SysML v2 standard REST API.
+        """
+
+        local_hints = self.metamodel_hints[metaclass_name]
 
         data_template = {}
-        for hint in self.metamodel_hints[metaclass_name]:
-            key, _, role, dtype, *_, num_attributes = hint
-            num_attributes = int(num_attributes)
 
-        for hint_key, hint_vals in local_hints.items():
-            starter_field = None
-            if hint_vals[1] == "primary":
-                # TODO: Figure out why some boolean and string attributes have 0 to -1
-                # rather than 1 to 1 multiplicity
-                if (
-                    int(hint_vals[5]) > 1
-                    or int(hint_vals[5]) == -1
-                    and not (hint_vals[2] == "Boolean" or hint_vals[2] == "String")
-                ):
-                    starter_field = []
-                else:
-                    # TODO: One other janky override
-                    if hint_key == "aliasIds":
-                        starter_field = []
-                    elif hint_vals[2] == "Boolean":
-                        starter_field = False
-                    elif hint_vals[2] == "String":
-                        starter_field = ""
-                    elif hint_vals[2] == "Integer":
-                        starter_field = 0
+        defaults_by_type = {"Boolean": False, "String": "", "Integer": 0}
 
-            data_template.update({hint_key: starter_field})
+        for att_name, att_fields in local_hints.items():
+            if att_fields["derived"]:
+                # we don't want derived fields in the dictionary, those are calculated as needed
+                continue
+
+            # TODO: Figure out why some boolean and string attributes have 0 to -1
+            # rather than 1 to 1 multiplicity
+            if (
+                att_name == "aliasIds"
+                or att_fields["upper_bound"] > 1
+                or att_fields["upper_bound"] == -1
+            ):
+                starter_field = []
+
+            elif att_fields["kind"] in defaults_by_type:
+                starter_field = defaults_by_type[att_fields["kind"]]
+            else:
+                starter_field = None
+
+            data_template.update({att_name: starter_field})
 
         self.pre_made_dicts.update({metaclass_name: data_template})
 

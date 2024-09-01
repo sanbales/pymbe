@@ -41,3 +41,7 @@ SysML v2, and its basis KerML, has a rich vocabulary of inheritance and overridi
 ### Model labeling
 
 In order to display elements in an intelligible way, models must generate sensible names and labels. There are some helper functions in PyMBE for that.
+
+### Loading up metamodel data
+
+The Ecore-based metamodels are automatically inspected and used to generate Python objects that align with the SysML v2 metamodel.

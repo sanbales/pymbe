@@ -68,7 +68,11 @@ class Naming(Enum):
         if naming == Naming.IDENTIFIER.value:
             return f"""<{data["@id"]}>"""
         if naming == Naming.LABEL.value:
-            return element._derived.get("label")
+            if hasattr(element, "_derived") and "label" in element._derived:
+                return element._derived.get("label")
+            else:
+                element._model._add_labels(element)
+                return element._derived.get("label")
         name = data.get("declaredName") or data.get("value") or data["@id"]
         if naming == Naming.SHORT.value:
             return f"<{name}>"
@@ -155,7 +159,8 @@ class Model:  # pylint: disable=too-many-instance-attributes
 
         # Modify and add derived data to the elements
         self._add_relationships()
-        self._add_labels()
+
+        # self._add_labels()
         self._initializing = False
 
     def __repr__(self) -> str:
@@ -215,7 +220,7 @@ class Model:  # pylint: disable=too-many-instance-attributes
             name=filepath.name,
             source=filepath.resolve(),
         )
-    
+
     @staticmethod
     def load_from_mult_post_files(filepath_list: List, encoding: str = "utf-8") -> "Model":
         """Make a model from multiple JSON files formatted to POST to v2 API (includes payload fields)"""
@@ -301,8 +306,8 @@ class Model:  # pylint: disable=too-many-instance-attributes
             if id_ not in self.all_non_relationships:
                 self.all_non_relationships[id_] = element
 
-        if not self._initializing:
-            self._add_labels(element)
+        # if not self._initializing:
+        #    self._add_labels(element)
         return element
 
     def save_to_file(
@@ -377,14 +382,18 @@ class Model:  # pylint: disable=too-many-instance-attributes
         try:
             endpoints = {
                 endpoint_type: [
-                    self.get_element(endpoint["@id"]) for endpoint in relationship._data[endpoint_type]
+                    self.get_element(endpoint["@id"])
+                    for endpoint in relationship._data[endpoint_type]
                 ]
                 for endpoint_type in ("source", "target")
             }
         except KeyError as likley_id_error:
-            warn(str(likley_id_error) + f" call was from a relation of type {relationship._metatype}.")
+            warn(
+                str(likley_id_error)
+                + f" call was from a relation of type {relationship._metatype}."
+            )
             return
-            
+
         except TypeError:
             # may be malformed with just one source and target - this compensates for that case
             endpoints = {}
@@ -392,24 +401,34 @@ class Model:  # pylint: disable=too-many-instance-attributes
             target_value = relationship._data["target"]
 
             if isinstance(source_value, dict):
-                endpoints.update({"source": [self.get_element(relationship._data["source"]["@id"])]
-                                  })
+                endpoints.update(
+                    {"source": [self.get_element(relationship._data["source"]["@id"])]}
+                )
             else:
-                endpoints.update({"source": [
-                    self.get_element(endpoint["@id"]) for endpoint in relationship._data["source"]
-                ]}
+                endpoints.update(
+                    {
+                        "source": [
+                            self.get_element(endpoint["@id"])
+                            for endpoint in relationship._data["source"]
+                        ]
+                    }
                 )
 
             if isinstance(target_value, dict):
-                endpoints.update({"target": [self.get_element(relationship._data["target"]["@id"])]
-                                  })
+                endpoints.update(
+                    {"target": [self.get_element(relationship._data["target"]["@id"])]}
+                )
             else:
-                endpoints.update({"target": [
-                    self.get_element(endpoint["@id"]) for endpoint in relationship._data["target"]
-                ]}
+                endpoints.update(
+                    {
+                        "target": [
+                            self.get_element(endpoint["@id"])
+                            for endpoint in relationship._data["target"]
+                        ]
+                    }
                 )
             return
-            
+
         metatype = relationship._metatype
         for direction, (key1, key2) in relationship_mapper.items():
             endpts1, endpts2 = endpoints[key1], endpoints[key2]
@@ -473,8 +492,8 @@ class Element:  # pylint: disable=too-many-instance-attributes
             # add Pythonic property to Element object based on metamodel for primary data values
             elif (
                 key in self._metamodel_hints
-                and self._metamodel_hints[key][1] == "primary"
-                and self._metamodel_hints[key][3] != "EReference"
+                and not self._metamodel_hints[key]["derived"]
+                and not self._metamodel_hints[key]["is_reference"]
             ):
                 setattr(self, key, items)
         if not model._initializing:
@@ -514,12 +533,12 @@ class Element:  # pylint: disable=too-many-instance-attributes
         for source in ("_data", "_derived"):
             source = self.__getattribute__(source)
             if key in source:
-                if key in self._metamodel_hints and self._metamodel_hints[key][1] == "primary":
+                if key in self._metamodel_hints and not self._metamodel_hints[key]["derived"]:
                     found = True
                     item = source[key]
                     break
 
-                if key in self._metamodel_hints and self._metamodel_hints[key][1] == "derived":
+                if key in self._metamodel_hints and self._metamodel_hints[key]["derived"]:
                     break
                 found = True
                 item = source[key]
@@ -530,8 +549,8 @@ class Element:  # pylint: disable=too-many-instance-attributes
         if not found:
             if (
                 key in self._metamodel_hints
-                and self._metamodel_hints[key][1] == "derived"
-                and self._metamodel_hints[key][3] == "EReference"
+                and self._metamodel_hints[key]["derived"]
+                and self._metamodel_hints[key]["is_reference"]
             ):
                 found = True
                 item = self.derive_attribute(key)

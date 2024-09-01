@@ -20,7 +20,7 @@ def get_label(element: Element) -> str:  # pylint: disable=too-many-return-state
 
     metatype = element._metatype
     if metatype.endswith("Expression"):
-        return f"{get_label_for_expression(element)} «{metatype}»"
+        return f"{get_label_for_expression(element)}" + f" «{metatype}»"
     if metatype == "Invariant" and "throughResultExpressionMembership" in element._derived:
         invar_expression = element.throughResultExpressionMembership[0]
         return f"{get_label_for_expression(invar_expression)} «{metatype}»"

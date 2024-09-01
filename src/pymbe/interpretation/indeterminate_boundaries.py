@@ -26,26 +26,10 @@ def build_indefinite_boundaries(
     occurrence = None
 
     for ocurrences_ele in ocurrences_eles:
-        if ocurrences_ele._metatype in ("Class"):
+        if ocurrences_ele._metatype == "Class":
             if hasattr(ocurrences_ele, "declaredName"):
                 if ocurrences_ele.declaredName == "Occurrence":
                     occurrence = ocurrences_ele
-
-    performance_ns = [
-        library_model_ns
-        for library_model_ns in library_model.ownedElement
-        if library_model_ns.throughOwningMembership[0].declaredName == "Performances"
-    ][0]
-
-    performance_eles = performance_ns.throughOwningMembership[0].throughOwningMembership
-
-    performance = None
-
-    for performance_ele in performance_eles:
-        if performance_ele._metatype in ("Behavior"):
-            if hasattr(performance_ele, "declaredName"):
-                if performance_ele.declaredName == "Performance":
-                    performance = performance_ele
 
     indefinite_time = build_from_classifier_pattern(
         owner=target_package,

@@ -1,18 +1,10 @@
 from uuid import uuid4
 
-import pytest
-
 import pymbe.api as pm
 from pymbe.model import Element, Model
 from pymbe.model_modification import (
     build_from_binary_relationship_pattern,
     build_from_classifier_pattern,
-)
-from pymbe.query.metamodel_navigator import (
-    get_effective_basic_name,
-    get_effective_lower_multiplicity,
-    get_effective_upper_multiplicity,
-    get_most_specific_feature_type,
 )
 
 
