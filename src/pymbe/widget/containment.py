@@ -5,7 +5,7 @@ from pathlib import Path
 import ipytree as ipyt
 import ipywidgets as ipyw
 import traitlets as trt
-from wxyz.lab import DockPop
+from ipylab import JupyterFrontEnd
 
 from ..model import Element, Model
 from .client import APIClientWidget, FileLoader
@@ -33,7 +33,8 @@ class ElementNode(ipyt.Node):
 class ContainmentTree(ipyw.VBox, BaseWidget):
     """A widget to explore the structure and data in a project."""
 
-    description: str = trt.Unicode("Containment Tree").tag(sync=True)
+    app: JupyterFrontEnd = trt.Instance(JupyterFrontEnd, allow_none=True)
+
     icon_class: str = trt.Unicode("jp-TreeViewIcon").tag(sync=True)
 
     api_client: APIClientWidget = trt.Instance(APIClientWidget)
@@ -85,8 +86,8 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
             ActionUsage="copy",
             AttributeUsage="copy",  # "underline"
             Expression="code",
-            Feature="terminal",  # "pencil-alt",
-            Function="square-root-alt",
+            Feature="terminal",  # "pencil-alt"
+            Function="calculator",  # "square-root-alt"
             InvocationExpression="comment-alt",
             ItemDefinition="file-invoice",  # info
             LiteralInteger="quote-right",
@@ -131,7 +132,7 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
     @trt.default("add_widget")
     def _make_add_widget(self) -> ty.Callable:
         def add_widget(widget: ipyw.DOMWidget, mode="split-right"):
-            DockPop([widget], mode=mode)
+            self.app.shell.add(widget, "main", {"mode": "split-top"})
 
         return add_widget
 
@@ -306,7 +307,6 @@ class ContainmentTree(ipyw.VBox, BaseWidget):
 
     def _observe_node_selection(self, change: trt.Bunch = None):
         with self.log_out:
-
             parent_node: ElementNode = change.owner
             selected: bool = change.new
 

@@ -1,17 +1,17 @@
-from .model import Instance, Model
+from .model import Element, Model, is_id_item
 from .widget.client import APIClientWidget
 from .widget.containment import ContainmentTree
-from .widget.diagram import M0Viewer, M1Viewer
+from .widget.diagram import M1Viewer
 from .widget.inspector import ElementInspector
-from .widget.ui import UI
+from .widget.ui import IntegratedApplication
 
 __all__ = (
+    "APIClientWidget",
     "ContainmentTree",
+    "Element",
     "ElementInspector",
-    "Instance",
-    "M0Viewer",
+    "IntegratedApplication",
+    "is_id_item",
     "M1Viewer",
     "Model",
-    "APIClientWidget",
-    "UI",
 )

@@ -1,3 +1,4 @@
 [submodule "tests/fixtures"]
 	path = tests/fixtures
 	url = https://github.com/sanbales/pymbe-test-fixtures.git
+	branch = feature/car-charger-use-case

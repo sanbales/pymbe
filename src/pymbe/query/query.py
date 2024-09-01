@@ -8,7 +8,11 @@ import networkx as nx
 from ..graph.lpg import SysML2LabeledPropertyGraph
 from ..label import get_label
 from ..model import Element
-from .metamodel_navigator import feature_multiplicity
+
+
+def feature_multiplicity():
+    # stubbing as obsolete method from metamodel_navigator that needs replacement
+    pass
 
 
 def roll_up_lower_multiplicity(
@@ -38,7 +42,6 @@ def roll_up_multiplicity(
     feature: Element,
     bound: str,
 ) -> int:
-
     max_multiplicity = lpg.model.max_multiplicity
 
     banded_featuring_graph = lpg.get_projection("Expanded Banded")
@@ -149,7 +152,6 @@ def get_features_typed_by_type(
     lpg: SysML2LabeledPropertyGraph,
     type_id: str,
 ) -> list:
-
     ptg = lpg.get_projection("Part Typing")
     rdg = lpg.get_projection("Redefinition and Subsetting")
 

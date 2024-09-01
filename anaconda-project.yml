@@ -8,6 +8,7 @@ description: |
 variables:
   MAX_LINE_LENGTH: 99
   PYTHONUTF8: 1
+  CONDA_EXE: mamba
 
 commands:
   lab:
@@ -87,7 +88,6 @@ commands:
 
 channels:
 - conda-forge
-- conda-forge/label/ipyelk_alpha  # TODO: Remove this when ipyelk=2 is released
 - nodefaults
 
 platforms:
@@ -100,21 +100,23 @@ env_specs:
     description: The environment for running the notebooks
     packages:
     - importnb
-    - ipyelk >=2.0.0a0,<3
+    - ipyelk >=2.0,<3
+    - ipylab
     - ipytree >=0.2.1,<1
     - jupyterlab >=3.0,<4
     - matplotlib
-    - networkx >=2.0,<3
+    - networkx
     - notebook
     - numpy
     - openmdao >=3.0,<4
+    - pandas
+    - pydantic >=1.0,<2  # reason: ipyelk breaks with pydantic v2 
     - pyld
     - rdflib
     - rdflib-jsonld
     - ruamel.yaml
     - tabulate
-    - wxyz_html
-    - wxyz_lab
+    - warlock
   developer:
     description: The environment for developing pymbe
     inherit_from:
@@ -133,5 +135,5 @@ env_specs:
     - pytest-html
     - pytest-xdist
     - testbook
-    - twine >=3.0,<3.4
+    - twine
     - wheel
