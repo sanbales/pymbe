@@ -24,22 +24,20 @@ class ListOfNamedItems(list):
 
     # FIXME: figure out why __dir__ of returned objects think they are lists
     def __getitem__(self, key):
-        item_map = {
-            item._data["declaredName"]: item
-            for item in self
-            if isinstance(item, Element) and "declaredName" in item._data
-        }
-        effective_item_map = {
-            item._data["effectiveName"]: item
-            for item in self
-            if isinstance(item, Element) and "effectiveName" in item._data
-        }
-        if key in item_map:
-            return item_map[key]
-        if key in effective_item_map:
-            return effective_item_map[key]
-        if isinstance(key, int):
+        if isinstance(key, (int, slice)):
             return super().__getitem__(key)
+
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be an integer or a string, not {type(key)}!")
+
+        item_by_name = {
+            item._data.get("declaredName", item._data.get("effectiveName", None)): item
+            for item in self
+            if isinstance(item, Element) and ("declaredName" in item._data or "effectiveName" in item._data)
+        }
+        if key in item_by_name:
+            return item_by_name[key]
+
         return None
 
 

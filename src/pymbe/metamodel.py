@@ -33,10 +33,6 @@ class MetaModel:
             "pymbe.static_data", "sysml_ecore_derived_refs.json"
         ) as sysml_ecore_refs:
             ecore_refs = json.load(sysml_ecore_refs)
-<<<<<<< HEAD
-        # keys should be the same since they are all identified metaelements from ecore
-        self.metamodel_hints = {k: ecore_atts[k] + ecore_refs[k] for k in ecore_atts}
-=======
 
         hints_build = {}
 
@@ -50,7 +46,6 @@ class MetaModel:
 
         # keys should be the same since they are all identified metaelements from ecore
         self.metamodel_hints = hints_build
->>>>>>> bjorn/main
 
     def _load_template_data(self, metaclass_name: str):
         defaults = {"Boolean": False, "String": "", "Integer": 0}
@@ -60,15 +55,6 @@ class MetaModel:
             key, _, role, dtype, *_, num_attributes = hint
             num_attributes = int(num_attributes)
 
-<<<<<<< HEAD
-            starter_field = None
-            if role == "primary":
-                default = defaults.get(dtype)
-                # TODO: Figure out why some boolean and string attributes have 0 to -1
-                # rather than 1 to 1 multiplicity
-                if num_attributes > 1 or (
-                    num_attributes == -1 and not (dtype in ("Boolean", "String"))
-=======
         for hint_key, hint_vals in local_hints.items():
             starter_field = None
             if hint_vals[1] == "primary":
@@ -78,19 +64,10 @@ class MetaModel:
                     int(hint_vals[5]) > 1
                     or int(hint_vals[5]) == -1
                     and not (hint_vals[2] == "Boolean" or hint_vals[2] == "String")
->>>>>>> bjorn/main
                 ):
                     starter_field = []
                 else:
                     # TODO: One other janky override
-<<<<<<< HEAD
-                    if key == "aliasIds":
-                        starter_field = []
-                    elif default is not None:
-                        starter_field = default
-            data_template.update({key: starter_field})
-        self.pre_made_dicts.update({metaclass_name: data_template})
-=======
                     if hint_key == "aliasIds":
                         starter_field = []
                     elif hint_vals[2] == "Boolean":
@@ -230,4 +207,3 @@ def derive_features(ele: "Element"):  # noqa: F821
         feature_membership.target[0]
         for feature_membership in derive_inherited_featurememberships(ele)
     ] + ele.throughFeatureMembership
->>>>>>> bjorn/main
